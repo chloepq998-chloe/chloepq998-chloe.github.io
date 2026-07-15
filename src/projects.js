@@ -15,7 +15,7 @@ export const profile = {
   name: 'Chloe',
   villageName: 'Chloe의 코딩 마을',
   bio: '내가 만든 것들이 사는 작은 마을이에요. 집을 눌러 안으로 들어와 보세요.',
-  github: 'https://github.com/chloepq998-chloe', // TODO: GitHub 아이디로 바꾸기
+  github: 'https://github.com/chloepq998', // TODO: GitHub 아이디로 바꾸기
   email: 'chloepq998@naver.com',
 }
 
@@ -27,7 +27,7 @@ export const projects = [
     house: 'cream',
     description: '단어를 외우고 복습하는 학습 앱. TODO: 무엇을 만들었고 뭘 배웠는지 적어보세요.',
     tags: ['학습', 'React'],
-    repo: 'https://github.com/chloepq998-chloe/vocab-app', // TODO
+    repo: 'https://github.com/chloepq998/vocab-app', // TODO
     demo: '',
     image: '',
   },
@@ -38,7 +38,7 @@ export const projects = [
     house: 'sage',
     description: 'wing-wife 프로젝트. TODO: 설명을 채워주세요.',
     tags: ['웹앱'],
-    repo: 'https://github.com/chloepq998-chloe/wing-wife', // TODO
+    repo: 'https://github.com/chloepq998/wing-wife', // TODO
     demo: '',
     image: '',
   },
@@ -49,7 +49,7 @@ export const projects = [
     house: 'navy',
     description: '리뷰 관련 프로젝트. TODO: 설명을 채워주세요.',
     tags: ['리뷰'],
-    repo: 'https://github.com/chloepq998-chloe/yunsa-review', // TODO
+    repo: 'https://github.com/chloepq998/yunsa-review', // TODO
     demo: '',
     image: '',
   },
@@ -60,7 +60,7 @@ export const projects = [
     house: 'thatch',
     description: '학교 분실물 찾기 서비스. TODO: 설명을 채워주세요.',
     tags: ['서비스'],
-    repo: 'https://github.com/chloepq998-chloe/school-lost-and-found', // TODO
+    repo: 'https://github.com/chloepq998/school-lost-and-found', // TODO
     demo: '',
     image: '',
   },
@@ -71,7 +71,7 @@ export const projects = [
     house: 'butter',
     description: 'Roblox 타이쿤 게임. TODO: 설명을 채워주세요.',
     tags: ['게임', 'Lua'],
-    repo: 'https://github.com/chloepq998-chloe/RobloxTycoon', // TODO
+    repo: 'https://github.com/chloepq998/RobloxTycoon', // TODO
     demo: '',
     image: '',
   },
