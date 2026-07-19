@@ -518,7 +518,7 @@ function mirror(){
 function clearAll(){ snapshot(); for(const k in grid)delete grid[k]; selectedCell=null; selection=new Set(); renderCells(); renderParams(); updateStat(); }
 
 // ---- history (undo/redo) + save/load ----
-const VERSION='1.4';
+const VERSION='1.5';
 let history=[], future=[], editing=false;
 function gv(id){ return document.getElementById(id).value; }
 function curGlobals(){ return {secNum:gv('secNum'),len:gv('len'),hgt:gv('hgt'),zig:gv('zig'),name:gv('secName'),diff:gv('secDiff')}; }
@@ -1081,7 +1081,7 @@ function resetHprof(){ snapshot(); hprof=Array.from({length:ROWS},(_,i)=>(i+1)/2
 function sideView(){ document.getElementById('sideview').classList.remove('hidden'); renderSideView(); }
 
 // ---- 참가자/주최자 모드 (M7) ----
-const ADMIN_CODE='chloe2026';   // 주최자 접속 암호 — 원하는 값으로 바꿔서 ?admin=값 으로 접속
+const ADMIN_CODE='19880818';   // 주최자 접속 암호 — 원하는 값으로 바꿔서 ?admin=값 으로 접속
 function isAdmin(){ return new URLSearchParams(location.search).get('admin')===ADMIN_CODE; }
 function applyMode(){
   const admin=isAdmin();
