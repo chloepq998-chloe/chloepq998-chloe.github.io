@@ -1,4 +1,5 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>세모 섹션 에디터 — Roblox Obby</title>
 <style>
   :root{
@@ -101,6 +102,26 @@
   #octagon.hidden,#view3d.hidden,#sideview.hidden{display:none}
   .oct-head{display:flex;align-items:center;gap:10px;width:100%}
   #view3d canvas,#sideview svg{max-width:100%}
+  [data-role="builder"]{display:none}   /* 게임 조립 도구 숨김 — 되살리려면 이 줄 삭제 */
+  #submissions{background:var(--panel);border-top:1px solid var(--border);padding:12px 16px;max-height:46vh;overflow:auto;display:flex;flex-direction:column;gap:8px}
+  #submissions.hidden{display:none}
+  .sub-list{display:flex;flex-direction:column;gap:5px;width:100%}
+  .sub-row{display:flex;align-items:center;gap:8px;padding:7px 9px;background:var(--panel2);border:1px solid var(--border);border-radius:6px;font-size:12px}
+  .sub-row .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .sub-row .sub-meta{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  @media (max-width:820px){
+    body{height:auto;min-height:100vh;overflow-y:auto;overflow-x:hidden;-webkit-text-size-adjust:100%}
+    #top{gap:10px;padding:8px 12px}
+    #main{flex-direction:column;min-height:0}
+    #left,#right{width:100%;border:none;border-bottom:1px solid var(--border)}
+    #palette{flex-direction:row;flex-wrap:wrap}
+    #palette button{flex:1 1 30%;width:auto}
+    #center{padding:10px 4px}
+    #right{order:3}
+    .barwrap{gap:6px}
+    .barwrap button{flex:1 1 auto}
+    textarea{min-height:150px}
+  }
   textarea{
     width:100%;flex:1;min-height:200px;background:#0b0e13;color:#cfe3ff;border:1px solid var(--border);
     border-radius:6px;padding:10px;font:12px/1.5 "SF Mono",Menlo,Consolas,monospace;resize:vertical;white-space:pre;
@@ -119,7 +140,6 @@
   <div class="g" id="modeBadge"></div>
   <div class="g muted" id="ver"></div>
 </div>
-<div id="contestBanner">🏆 <b>세모 점프맵 공모전</b> — 나만의 로블록스 오르막 구간을 설계하고 <b>제출하기</b>로 응모하세요! · 오른쪽 <b>분석 패널</b>로 난이도·규칙 확인, <b>📐측면 / 🧊3D</b>로 미리보기 가능.</div>
 
 <div id="main">
   <aside id="left" class="col">
@@ -127,7 +147,7 @@
     <div class="pal" id="palette"></div>
     <div class="pal-title" style="margin-top:16px">프리셋</div>
     <div class="pal" id="presets"></div>
-    <div data-role="admin">
+    <div data-role="builder">
       <div class="pal-title" style="margin-top:16px">보관함 <span id="libCount"></span></div>
       <div class="pal" id="library"></div>
     </div>
@@ -151,15 +171,16 @@
 </div>
 
 <div class="barwrap">
-  <button class="submit" onclick="submit()">🏆 제출하기</button>
-  <button class="primary" data-role="admin" onclick="genCode()">⚙ Luau 코드 생성</button>
-  <button data-role="admin" onclick="addToLibrary()">📚 보관함에 추가</button>
-  <button data-role="admin" onclick="batchExport()">📦 전체 내보내기</button>
-  <button data-role="admin" onclick="assemblyCode()">🔩 조립 스크립트</button>
+  <button class="submit" data-role="participant" onclick="submit()">🏆 제출하기</button>
+  <button class="primary" data-role="admin" onclick="loadSubmissions()">📥 제출 목록</button>
+  <button data-role="builder" onclick="genCode()">⚙ Luau 코드 생성</button>
+  <button data-role="builder" onclick="addToLibrary()">📚 보관함에 추가</button>
+  <button data-role="builder" onclick="batchExport()">📦 전체 내보내기</button>
+  <button data-role="builder" onclick="assemblyCode()">🔩 조립 스크립트</button>
   <button onclick="view3d()">🧊 3D 미리보기</button>
   <button onclick="sideView()">📐 측면 높이</button>
-  <button data-role="admin" onclick="octagonPreview()">⬡ 팔각형 미리보기</button>
-  <button data-role="admin" onclick="assembled3d()">🌐 팔각형 3D</button>
+  <button data-role="builder" onclick="octagonPreview()">⬡ 팔각형 미리보기</button>
+  <button data-role="builder" onclick="assembled3d()">🌐 팔각형 3D</button>
   <button onclick="mirror()">↔ 좌우 미러</button>
   <button onclick="saveJSON()">💾 세모 저장</button>
   <button onclick="loadJSON()">📂 불러오기</button>
@@ -170,6 +191,7 @@
 <div id="octagon" class="hidden"></div>
 <div id="view3d" class="hidden"></div>
 <div id="sideview" class="hidden"></div>
+<div id="submissions" class="hidden"></div>
 
 <div id="bottom" class="hidden">
   <div class="out-bar">
@@ -518,7 +540,7 @@ function mirror(){
 function clearAll(){ snapshot(); for(const k in grid)delete grid[k]; selectedCell=null; selection=new Set(); renderCells(); renderParams(); updateStat(); }
 
 // ---- history (undo/redo) + save/load ----
-const VERSION='1.5';
+const VERSION='1.6';
 let history=[], future=[], editing=false;
 function gv(id){ return document.getElementById(id).value; }
 function curGlobals(){ return {secNum:gv('secNum'),len:gv('len'),hgt:gv('hgt'),zig:gv('zig'),name:gv('secName'),diff:gv('secDiff')}; }
@@ -1086,8 +1108,9 @@ function isAdmin(){ return new URLSearchParams(location.search).get('admin')===A
 function applyMode(){
   const admin=isAdmin();
   document.querySelectorAll('[data-role="admin"]').forEach(el=>el.style.display=admin?'':'none');
+  document.querySelectorAll('[data-role="participant"]').forEach(el=>el.style.display=admin?'none':'');
   document.getElementById('modeBadge').textContent=admin?'👑 주최자':'🎮 참가자';
-  document.getElementById('contestBanner').style.display=admin?'none':'';
+  // data-role="builder"(게임 조립 도구)는 CSS로 항상 숨김 — 되살리려면 아래 CSS 한 줄 지우면 됨
 }
 // ⚙️ 공모전 제출 설정 — 아래 두 값을 본인 Supabase 프로젝트 값으로 채우면 제출이 켜집니다.
 //   (anon 공개키만! service_role 비밀키 아님. 배포 사이트 소스에 노출돼도 RLS insert-only 로 안전)
@@ -1112,6 +1135,41 @@ async function submit(){
     else alert('제출 실패 ('+res.status+'): '+(await res.text()).slice(0,150));
   }catch(e){ alert('제출 실패(네트워크): '+e.message); }
   finally{ if(btn){btn.disabled=false;btn.textContent='🏆 제출하기';} }
+}
+
+// ---- 주최자: 제출 목록 확인 (Supabase 읽기) ----
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let subRows=[];
+async function loadSubmissions(){
+  if(!SUPABASE_URL||!SUPABASE_ANON){ alert('Supabase 설정이 필요합니다.'); return; }
+  const el=document.getElementById('submissions');
+  ['bottom','octagon','view3d','sideview'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  el.classList.remove('hidden');
+  el.innerHTML=`<div class="oct-head"><b>📥 제출 목록</b><span class="muted">불러오는 중…</span></div>`;
+  try{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/submissions?select=name,submitter,difficulty,score,data,created_at&order=created_at.desc',{
+      headers:{apikey:SUPABASE_ANON, Authorization:'Bearer '+SUPABASE_ANON}
+    });
+    if(!res.ok){ const t=await res.text();
+      el.innerHTML=`<div class="oct-head"><b>📥 제출 목록</b><button class="mini" style="margin-left:auto" onclick="document.getElementById('submissions').classList.add('hidden')">닫기</button></div>
+        <div class="muted" style="font-size:12px">불러오기 실패 (${res.status}) — 읽기(SELECT) 정책이 아직 없을 수 있어요.<br>${escapeHtml(t.slice(0,160))}</div>`;
+      return; }
+    subRows=await res.json(); renderSubmissions();
+  }catch(e){ el.innerHTML=`<div class="oct-head"><b>📥 제출 목록</b></div><div class="muted">네트워크 오류: ${escapeHtml(e.message)}</div>`; }
+}
+function renderSubmissions(){
+  const el=document.getElementById('submissions');
+  let h=`<div class="oct-head"><b>📥 제출 목록 (${subRows.length})</b><span class="muted">— 클릭하면 에디터에 불러와 🧊3D·분석으로 확인</span>
+    <button class="mini" style="margin-left:auto" onclick="loadSubmissions()">🔄 새로고침</button>
+    <button class="mini" onclick="document.getElementById('submissions').classList.add('hidden')">닫기</button></div>`;
+  if(!subRows.length){ el.innerHTML=h+'<div class="muted">아직 제출이 없습니다.</div>'; return; }
+  h+='<div class="sub-list">';
+  subRows.forEach((r,i)=>{ h+=`<div class="sub-row"><span class="dot" style="background:${DIFFCOL[r.difficulty]||'#888'}"></span>
+    <b>${escapeHtml(r.submitter||'?')}</b>
+    <span class="sub-meta">· ${escapeHtml(r.name||'무제')} · ${escapeHtml(r.difficulty||'')} · ★${escapeHtml(r.score)} · ${escapeHtml((r.created_at||'').slice(0,16).replace('T',' '))}</span>
+    <button class="mini" style="margin-left:auto" data-i="${i}">불러오기</button></div>`; });
+  el.innerHTML=h+'</div>';
+  el.querySelectorAll('.sub-row button[data-i]').forEach(b=>b.onclick=()=>{ const r=subRows[+b.dataset.i]; if(r&&r.data){ snapshot(); applyState(r.data); el.classList.add('hidden'); } });
 }
 
 // init
