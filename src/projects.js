@@ -16,7 +16,7 @@ export const profile = {
   villageName: 'Chloe의 코딩 마을',
   bio: '내가 만든 것들이 사는 작은 마을이에요. 집을 눌러 안으로 들어와 보세요.',
   github: 'https://github.com/chloepq998-chloe', // TODO: GitHub 아이디로 바꾸기
-  email: 'chloepq998-chloe@naver.com',
+  email: 'chloepq998@naver.com',
 }
 
 export const projects = [
@@ -24,7 +24,7 @@ export const projects = [
     title: 'vocab-app',
     face: '🐨',
     year: 2025,
-    house: 'cream',
+    house: 'coral',
     description: '단어를 외우고 복습하는 학습 앱. TODO: 무엇을 만들었고 뭘 배웠는지 적어보세요.',
     tags: ['학습', 'React'],
     repo: 'https://github.com/chloepq998-chloe/vocab-app', // TODO
@@ -35,7 +35,7 @@ export const projects = [
     title: 'wing-wife',
     face: '🐻',
     year: 2025,
-    house: 'sage',
+    house: 'honey',
     description: 'wing-wife 프로젝트. TODO: 설명을 채워주세요.',
     tags: ['웹앱'],
     repo: 'https://github.com/chloepq998-chloe/wing-wife', // TODO
@@ -57,7 +57,7 @@ export const projects = [
     title: 'school-lost-and-found',
     face: '🐶',
     year: 2024,
-    house: 'thatch',
+    house: 'rose',
     description: '학교 분실물 찾기 서비스. TODO: 설명을 채워주세요.',
     tags: ['서비스'],
     repo: 'https://github.com/chloepq998-chloe/school-lost-and-found', // TODO
@@ -68,7 +68,7 @@ export const projects = [
     title: 'RobloxTycoon',
     face: '🐸',
     year: 2024,
-    house: 'butter',
+    house: 'mint',
     description: 'Roblox 타이쿤 게임. TODO: 설명을 채워주세요.',
     tags: ['게임', 'Lua'],
     repo: 'https://github.com/chloepq998-chloe/RobloxTycoon', // TODO

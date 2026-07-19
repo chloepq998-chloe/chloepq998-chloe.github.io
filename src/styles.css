@@ -12,6 +12,18 @@
   --shadow: rgba(90, 65, 38, 0.18);
 }
 
+.app.dawn {
+  --sky-top: #f4c6cf;
+  --sky-bot: #fdeadb;
+  --shadow: rgba(120, 80, 60, 0.16);
+}
+
+.app.dusk {
+  --sky-top: #f2ac74;
+  --sky-bot: #f9ddc2;
+  --shadow: rgba(120, 70, 40, 0.2);
+}
+
 .app.night {
   --sky-top: #3a3766;
   --sky-bot: #6a5a86;
@@ -156,9 +168,22 @@ body {
 
 .scene-wrap {
   width: 100%;
-  filter: drop-shadow(0 12px 18px var(--shadow));
+  border-radius: 20px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #bfe3f2 0%, #d7eec6 54%, #9fce6e 100%);
+  box-shadow: 0 12px 18px var(--shadow);
+  transition: background 0.8s ease;
 }
-.scene { width: 100%; height: auto; display: block; }
+.app.dusk .scene-wrap { background: linear-gradient(180deg, #f3c79a 0%, #ecdcb2 54%, #8fbf68 100%); }
+.app.night .scene-wrap { background: linear-gradient(180deg, #3a3d66 0%, #4a4a74 54%, #567a50 100%); }
+.house-img {
+  display: block;
+  width: 88%;
+  margin: 6% auto 0;
+  height: auto;
+  animation: float 5.5s ease-in-out infinite;
+}
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
 /* 명패 */
 .plaque {
@@ -219,6 +244,7 @@ body {
 }
 
 .window-light { opacity: 0; transition: opacity 0.8s ease; }
+.app.dusk .window-light { opacity: 0.5; }
 .app.night .window-light { opacity: 0.9; animation: flicker 5s ease-in-out infinite; }
 @keyframes flicker { 0%, 100% { opacity: 0.9; } 48% { opacity: 0.78; } 52% { opacity: 0.95; } }
 
@@ -285,7 +311,48 @@ body {
   .yard-grid { grid-template-columns: 1fr; }
 }
 
+.tree-b { animation-duration: 5.6s; animation-delay: -1.5s; }
+
 @media (prefers-reduced-motion: reduce) {
   .tree, .flower, .smoke circle, .cloud, .sun-moon, .window-light, .interior { animation: none; }
   .smoke circle { opacity: 0.3; }
 }
+
+/* ---------- 관리자 ---------- */
+.admin { max-width: 760px; margin: 0 auto; padding: 28px 20px 60px; }
+.admin-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.admin-head h1 { font-family: 'Baloo 2', sans-serif; font-size: 24px; margin: 0; color: var(--ink); }
+
+.admin-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.admin-msg { font-weight: 700; color: #3b6d3b; }
+
+.admin-section { font-family: 'Baloo 2', sans-serif; font-size: 16px; color: var(--ink); margin: 22px 0 10px; }
+.admin-list { display: flex; flex-direction: column; gap: 16px; }
+
+.admin-card {
+  background: var(--card);
+  border: 3px solid var(--wood-dark);
+  border-radius: 18px;
+  padding: 16px 18px;
+  box-shadow: 0 6px 0 var(--shadow);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.admin-card .row { display: flex; gap: 12px; flex-wrap: wrap; }
+.admin-card .row.end { justify-content: flex-end; }
+.admin-card label { display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
+.admin-card label.grow { flex: 1; min-width: 140px; }
+.admin-card input, .admin-card select, .admin-card textarea {
+  font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 600;
+  padding: 9px 12px; border: 2px solid var(--wood-light); border-radius: 12px;
+  background: #fffdf7; color: #4a3a26; outline: none;
+}
+.admin-card input:focus, .admin-card select:focus, .admin-card textarea:focus { border-color: var(--wood); }
+.admin-card textarea { resize: vertical; }
+
+.login { max-width: 340px; margin: 40px auto; align-items: stretch; }
+.login h2 { font-family: 'Baloo 2', sans-serif; margin: 0 0 6px; text-align: center; color: var(--ink); }
+.login input {
+  font-family: 'Nunito', sans-serif; font-size: 15px; padding: 11px 14px;
+  border: 2px solid var(--wood-light); border-radius: 12px; background: #fffdf7; outline: none;
+}
+.login .err { color: #c0392b; font-weight: 700; font-size: 14px; margin: 0; text-align: center; }

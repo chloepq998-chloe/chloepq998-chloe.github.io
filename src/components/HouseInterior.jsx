@@ -42,7 +42,7 @@ export default function HouseInterior({ project, onBack }) {
 
           <div className="link-row">
             {project.repo && (
-              <a className="pill primary" href={project.repo} target="_blank" rel="noreferrer">GitHub 코드</a>
+              <a className="pill primary" href={project.repo} target="_blank" rel="noreferrer">바로가기 →</a>
             )}
             {project.demo && (
               <a className="pill primary" href={project.demo} target="_blank" rel="noreferrer">라이브 데모 ↗</a>
