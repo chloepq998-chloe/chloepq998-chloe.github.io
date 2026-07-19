@@ -1,0 +1,1120 @@
+<meta charset="utf-8">
+<title>세모 섹션 에디터 — Roblox Obby</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#161b22; --panel2:#1c232d; --border:#2a3340;
+    --text:#e6edf3; --muted:#8b98a6; --accent:#4ea1ff;
+    --gray:#8a8f98; --blue:#3b82f6; --orange:#f59e0b; --red:#ef4444; --purple:#a855f7;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font:13px/1.4 system-ui,"Segoe UI",Roboto,sans-serif;
+    height:100vh; display:flex; flex-direction:column; overflow:hidden;
+    -webkit-user-select:none; user-select:none;
+  }
+  h1{font-size:14px;margin:0;font-weight:600;letter-spacing:.3px}
+  .muted{color:var(--muted)}
+  button{
+    background:var(--panel2); color:var(--text); border:1px solid var(--border);
+    border-radius:6px; padding:6px 12px; cursor:pointer; font:inherit;
+  }
+  button:hover{border-color:var(--accent)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#04121f;font-weight:600}
+  button.submit{background:#22c55e;border-color:#22c55e;color:#052e16;font-weight:700}
+  button.submit:hover{background:#16a34a}
+  #contestBanner{padding:9px 16px;background:linear-gradient(90deg,#1a2b1f,#161b22);border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text)}
+  #contestBanner b{color:#4ade80}
+  #modeBadge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:var(--panel2);border:1px solid var(--border)}
+  button.mini{padding:4px 8px;font-size:12px}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  input[type=range]:disabled{opacity:.4}
+  select{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:4px}
+
+  #top{
+    display:flex; align-items:center; gap:18px; padding:10px 16px;
+    background:var(--panel); border-bottom:1px solid var(--border); flex-wrap:wrap;
+  }
+  #top .g{display:flex;align-items:center;gap:6px}
+  #top .g input{width:64px;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:4px 6px}
+
+  #main{flex:1;display:flex;min-height:0}
+  .col{overflow:auto}
+  #left{width:212px;background:var(--panel);border-right:1px solid var(--border);padding:12px}
+  #center{flex:1;display:flex;flex-direction:column;align-items:center;padding:16px;background:radial-gradient(120% 90% at 50% 0%,#141b24,#0e1116)}
+  #right{width:288px;background:var(--panel);border-left:1px solid var(--border);padding:14px}
+
+  .pal-title{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:2px 0 8px}
+  .pal{display:flex;flex-direction:column;gap:5px}
+  .pal button{display:flex;align-items:center;gap:8px;justify-content:flex-start;text-align:left;padding:7px 9px;width:100%}
+  .pal button.sel{outline:2px solid var(--accent);border-color:var(--accent)}
+  .swatch{width:16px;height:16px;border-radius:4px;flex:none;display:grid;place-items:center;font-size:11px;color:#0008;font-weight:700}
+  .preset-row{display:flex;gap:4px}
+  .preset-row button.p{flex:1;justify-content:flex-start}
+  .preset-row button.del{flex:none;padding:4px 7px;color:var(--muted)}
+
+  .grid-head{color:var(--muted);font-size:11px;margin:2px 0 8px;text-align:center}
+  #grid{display:flex;flex-direction:column;gap:4px;background:#0b0e13;padding:10px 10px 10px 4px;border:1px solid var(--border);border-radius:8px}
+  .gridrow{position:relative;display:flex;gap:4px;justify-content:center;align-items:center;width:250px;margin:0 auto}
+  .rlabel{position:absolute;left:-2px;width:20px;text-align:right;color:var(--muted);font-size:10px;pointer-events:none}
+  .void{background:repeating-linear-gradient(45deg,#161c24,#161c24 4px,#12171e 4px,#12171e 8px);border-radius:5px;height:36px;flex:none;opacity:.6}
+  .cell{
+    width:42px;height:36px;border-radius:5px;background:#212a35;border:1px solid #2c3744;
+    cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:#0009;position:relative;flex:none;
+  }
+  .cell:hover{border-color:var(--accent)}
+  .cell .glyph{font-size:12px;font-weight:700;line-height:1}
+  .cell .badge{font-size:8.5px;line-height:1.1;margin-top:1px;font-variant-numeric:tabular-nums;color:#000b}
+  .cell.selected{outline:2px solid var(--accent);outline-offset:-2px}
+  .cell.primary{outline:2px solid #fff;outline-offset:-2px}
+  .cell.warn::after{content:"";position:absolute;inset:0;border-radius:5px;box-shadow:inset 0 0 0 2px #fbbf24;pointer-events:none}
+
+  #analysis{margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
+  .an-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin:6px 0}
+  .an-row b{font-variant-numeric:tabular-nums}
+  .gauge{height:7px;border-radius:4px;background:var(--panel2);overflow:hidden;margin:2px 0 8px}
+  .gauge>i{display:block;height:100%;border-radius:4px}
+  .ok{color:#22c55e} .warnc{color:#fbbf24}
+
+  .p-kind{display:flex;align-items:center;gap:8px;font-weight:600;margin-bottom:10px}
+  .selnote{font-size:11px;color:var(--accent);margin-bottom:10px}
+  .actions{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+  .param{margin-bottom:12px}
+  .param label{display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px;align-items:center}
+  .param label b{color:var(--accent);font-variant-numeric:tabular-nums}
+  .chk{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin:4px 0}
+  .chk input{accent-color:var(--accent)}
+  .empty{color:var(--muted);margin-top:20px;text-align:center;line-height:1.7}
+  .divider{height:1px;background:var(--border);margin:12px 0}
+
+  .barwrap{padding:10px 16px;background:var(--panel);border-top:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap}
+  #bottom{background:var(--panel);border-top:1px solid var(--border);padding:12px 16px;max-height:44vh;display:flex;flex-direction:column;gap:8px}
+  #bottom.hidden{display:none}
+  .out-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .lib-row{display:flex;align-items:center;gap:6px;padding:5px 7px;background:var(--panel2);border:1px solid var(--border);border-radius:6px}
+  .lib-row .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .lib-row .lib-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+  .lib-row .lib-diff{font-size:10px;flex:none}
+  #octagon,#view3d,#sideview{background:var(--panel);border-top:1px solid var(--border);padding:12px 16px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  #octagon.hidden,#view3d.hidden,#sideview.hidden{display:none}
+  .oct-head{display:flex;align-items:center;gap:10px;width:100%}
+  #view3d canvas,#sideview svg{max-width:100%}
+  textarea{
+    width:100%;flex:1;min-height:200px;background:#0b0e13;color:#cfe3ff;border:1px solid var(--border);
+    border-radius:6px;padding:10px;font:12px/1.5 "SF Mono",Menlo,Consolas,monospace;resize:vertical;white-space:pre;
+  }
+</style>
+
+<div id="top">
+  <h1>🔺 세모 섹션 에디터</h1>
+  <div class="g"><span class="muted">섹션 번호</span><input id="secNum" type="number" value="1" min="1"></div>
+  <div class="g"><span class="muted">총 길이</span><input id="len" type="number" value="120" onchange="updateStat()"></div>
+  <div class="g"><span class="muted">오르막 높이</span><input id="hgt" type="number" value="100" onchange="updateStat()"></div>
+  <div class="g"><span class="muted">지그재그 폭</span><input id="zig" type="number" value="8" onchange="updateStat()"></div>
+  <div class="g"><span class="muted">이름</span><input id="secName" type="text" placeholder="세모 이름" style="width:120px"></div>
+  <div class="g"><span class="muted">난이도</span><select id="secDiff"><option>쉬움</option><option selected>보통</option><option>지옥</option></select></div>
+  <div class="g muted" style="margin-left:auto" id="stat"></div>
+  <div class="g" id="modeBadge"></div>
+  <div class="g muted" id="ver"></div>
+</div>
+<div id="contestBanner">🏆 <b>세모 점프맵 공모전</b> — 나만의 로블록스 오르막 구간을 설계하고 <b>제출하기</b>로 응모하세요! · 오른쪽 <b>분석 패널</b>로 난이도·규칙 확인, <b>📐측면 / 🧊3D</b>로 미리보기 가능.</div>
+
+<div id="main">
+  <aside id="left" class="col">
+    <div class="pal-title">발판 팔레트</div>
+    <div class="pal" id="palette"></div>
+    <div class="pal-title" style="margin-top:16px">프리셋</div>
+    <div class="pal" id="presets"></div>
+    <div data-role="admin">
+      <div class="pal-title" style="margin-top:16px">보관함 <span id="libCount"></span></div>
+      <div class="pal" id="library"></div>
+    </div>
+    <div class="muted" style="margin-top:14px;font-size:11px;line-height:1.7">
+      클릭 = 칠하기/편집 · 같은 칸 재클릭 = 지우기<br>
+      Shift+클릭 / 드래그 = 여러 개 선택<br>
+      여러 개 선택 후 파라미터 = 일괄 적용
+    </div>
+  </aside>
+
+  <section id="center" class="col">
+    <div class="grid-head">⬆ 위 = 출구(20, 중앙·높음·좁음)</div>
+    <div id="grid"></div>
+    <div class="grid-head">⬇ 아래 = 입구(1, 바깥·낮음·넓음)</div>
+  </section>
+
+  <aside id="right" class="col">
+    <div id="params"><div class="empty">칸을 선택하면<br>파라미터가 여기 표시됩니다.</div></div>
+    <div id="analysis"></div>
+  </aside>
+</div>
+
+<div class="barwrap">
+  <button class="submit" onclick="submit()">🏆 제출하기</button>
+  <button class="primary" data-role="admin" onclick="genCode()">⚙ Luau 코드 생성</button>
+  <button data-role="admin" onclick="addToLibrary()">📚 보관함에 추가</button>
+  <button data-role="admin" onclick="batchExport()">📦 전체 내보내기</button>
+  <button data-role="admin" onclick="assemblyCode()">🔩 조립 스크립트</button>
+  <button onclick="view3d()">🧊 3D 미리보기</button>
+  <button onclick="sideView()">📐 측면 높이</button>
+  <button data-role="admin" onclick="octagonPreview()">⬡ 팔각형 미리보기</button>
+  <button data-role="admin" onclick="assembled3d()">🌐 팔각형 3D</button>
+  <button onclick="mirror()">↔ 좌우 미러</button>
+  <button onclick="saveJSON()">💾 세모 저장</button>
+  <button onclick="loadJSON()">📂 불러오기</button>
+  <button onclick="clearAll()">전체 지우기</button>
+  <button onclick="document.getElementById('bottom').classList.toggle('hidden')">출력 접기/펼치기</button>
+</div>
+
+<div id="octagon" class="hidden"></div>
+<div id="view3d" class="hidden"></div>
+<div id="sideview" class="hidden"></div>
+
+<div id="bottom" class="hidden">
+  <div class="out-bar">
+    <b id="outTitle">생성된 Luau</b><span class="muted" id="outSub">— Builder + PlatformController</span>
+    <button class="mini" id="copyBuilder" style="margin-left:auto" onclick="copyPart('builder')">📋 Builder 복사</button>
+    <button class="mini" id="copyController" onclick="copyPart('controller')">📋 Controller 복사</button>
+    <button class="mini" id="copyOut" onclick="copyOut()" hidden>📋 복사</button>
+  </div>
+  <textarea id="out"></textarea>
+</div>
+
+<script>
+const ROWS=20;
+// 계단식 삼각형: 1~6행=5열, 7~12행=4열, 13~20행=3열
+function colsForRow(r){ return r<=6?5 : r<=12?4 : 3; }
+function slotOf(c,n){ return c-(n+1)/2; }          // 중앙정렬 슬롯(-2..2 / -1.5..1.5 / -1..1)
+function autoSize(r){ return +(6 - 2.5*(r-1)/(ROWS-1)).toFixed(2); } // 아래6 → 위3.5
+let hprof=Array.from({length:ROWS},(_,i)=>(i+1)/21);   // 행별 정규화 높이(0~1), 기본=직선 오르막
+function hpVal(hp,r){ const v=hp&&hp[r-1]; return (v==null)?r/21:v; }   // y = height * hpVal
+
+const KINDS={
+  plain:   {label:'평범',      color:'#8a8f98', glyph:'',  group:null},
+  moving:  {label:'왕복/승강',  color:'#3b82f6', glyph:'⇄', group:'moving'},
+  rotplat: {label:'회전 발판',  color:'#22d3ee', glyph:'⟲', group:'rotplat'},
+  vanish:  {label:'소멸 발판',   color:'#f59e0b', glyph:'◌', group:'vanish'},
+  spinner: {label:'회전봉',     color:'#ef4444', glyph:'⟳', group:'redhaz'},
+  pushwall:{label:'미는벽',     color:'#ef4444', glyph:'▐', group:'redhaz'},
+  intpush: {label:'간헐밀치기', color:'#ef4444', glyph:'»', group:'redhaz'},
+  pendulum:{label:'시계추',     color:'#ef4444', glyph:'⇕', group:'redhaz'},
+  lava:    {label:'용암/독',    color:'#a855f7', glyph:'≈', group:'purhaz'},
+  spike:   {label:'가시',       color:'#a855f7', glyph:'▲', group:'purhaz'},
+  laser:   {label:'레이저',     color:'#a855f7', glyph:'—', group:'purhaz'},
+};
+
+// 발판 footprint(크기)는 상단의 통합 "발판 크기" 컨트롤(자동/수동)로 관리 → 그래서 moving에서 Size 제거.
+const GROUPS={
+  moving:[
+    {key:'Speed', label:'속도',           min:0.1,max:10, step:0.1, def:2},
+    {key:'Range', label:'이동거리(studs)', min:1,  max:20, step:0.5, def:6},
+    {key:'Phase', label:'시작타이밍(위상°)',min:0, max:360,step:5,   def:0},
+    {key:'Axis',  label:'축(Y=승강)',      type:'select', options:['X','Z','Y'], def:'X'},
+  ],
+  rotplat:[
+    {key:'Speed', label:'자전속도(±방향)', min:-8,max:8, step:0.1, def:2},
+    {key:'Phase', label:'시작타이밍(°)',   min:0, max:360,step:5,  def:0},
+  ],
+  vanish:[
+    {key:'Mode',         label:'방식',            type:'select', options:['지연','주기','복귀'], def:'지연'},
+    {key:'DisappearTime',label:'사라지는시간',    min:0.1,max:3,  step:0.1, def:0.5},
+    {key:'RespawnTime',  label:'재생시간',        min:0.5,max:10, step:0.5, def:3},
+    {key:'BlinkPeriod',  label:'깜빡주기',        min:0.05,max:2, step:0.05,def:0.3},
+    {key:'WarnTime',     label:'경고시간',        min:0.1,max:3,  step:0.1, def:1},
+    {key:'Cycle',        label:'주기(주기모드)',   min:0.5,max:10, step:0.5, def:2},
+  ],
+  redhaz:[
+    {key:'Speed',    label:'속도',        min:0.1,max:10, step:0.1, def:3},
+    {key:'Range',    label:'작동거리',     min:1,  max:20, step:0.5, def:6},
+    {key:'Cycle',    label:'작동주기',     min:0.5,max:10, step:0.5, def:2},
+    {key:'Phase',    label:'시작타이밍(°)',min:0, max:360,step:5,   def:0},
+    {key:'PushForce',label:'밀어내는힘',   min:0,  max:300,step:10,  def:80},
+    {key:'Length',   label:'장치 길이',    min:1,  max:20, step:0.5, def:6},
+  ],
+  purhaz:[
+    {key:'Cycle', label:'작동주기', min:0.5,max:10, step:0.5, def:2},
+    {key:'Speed', label:'속도',    min:0.1,max:10, step:0.1, def:2},
+    {key:'Range', label:'범위',    min:1,  max:20, step:0.5, def:6},
+    {key:'Warn',  label:'경고',    min:0.1,max:3,  step:0.1, def:1},
+  ],
+};
+
+// ---- state (memory only) ----
+const grid={};                 // "r-c" -> {kind, params, sizeAuto, sizeManual}
+let selectedKind='plain';
+let activePreset=null;         // index into presets, or null
+let selectedCell=null;         // 주 선택(파라미터 패널 기준)
+let selection=new Set();       // 다중 선택
+let clipboardCfg=null;
+const presets=[];
+
+function newPlatform(kind,r){
+  const g=KINDS[kind].group; const params={};
+  if(g) for(const p of GROUPS[g]) params[p.key]=p.def;
+  return {kind,params,sizeAuto:true,sizeManual:autoSize(r)};
+}
+function clonePlatform(src,r){
+  return {kind:src.kind, params:JSON.parse(JSON.stringify(src.params)),
+          sizeAuto:src.sizeAuto, sizeManual:src.sizeManual!=null?src.sizeManual:autoSize(r)};
+}
+function effSize(key){ const [r]=key.split('-').map(Number); const pf=grid[key];
+  return pf.sizeAuto?autoSize(r):pf.sizeManual; }
+
+const VMODE={'지연':'지','주기':'주','복귀':'복'};
+function badgeText(pf){
+  const g=KINDS[pf.kind].group,p=pf.params;
+  if(g==='moving') return (p.Axis==='Y'?'↕':'')+p.Speed+'·'+p.Range;
+  if(g==='rotplat') return '⟲'+p.Speed;
+  if(g==='vanish') return (VMODE[p.Mode]||'')+' '+(p.Mode==='주기'?p.Cycle+'s':p.DisappearTime+'s');
+  if(g==='redhaz') return p.Speed+'·'+p.Cycle;
+  if(g==='purhaz') return p.Cycle+'·'+p.Range;
+  return '';
+}
+// 소멸은 방식별로 글리프를 달리해 한눈에 구분
+function cellGlyph(pf){
+  if(pf.kind==='vanish') return {'지연':'◌','주기':'◍','복귀':'◑'}[pf.params.Mode]||'◌';
+  return KINDS[pf.kind].glyph;
+}
+
+// ---- palette ----
+const palEl=document.getElementById('palette');
+const PALKEYS=['1','2','3','4','5','6','7','8','9','0','L'];
+Object.entries(KINDS).forEach(([k,v],i)=>{
+  const b=document.createElement('button');
+  b.dataset.kind=k;
+  b.innerHTML=`<span class="swatch" style="background:${v.color}">${v.glyph}</span>${v.label}<span class="muted" style="margin-left:auto;font-size:10px">${PALKEYS[i]||''}</span>`;
+  b.onclick=()=>{selectedKind=k; activePreset=null; renderPalette();};
+  palEl.appendChild(b);
+});
+function renderPalette(){
+  [...palEl.children].forEach(b=>b.classList.toggle('sel',activePreset==null && b.dataset.kind===selectedKind));
+  const pe=document.getElementById('presets'); pe.innerHTML='';
+  if(!presets.length){ pe.innerHTML='<span class="muted" style="font-size:11px">발판 선택 후 “프리셋 저장”</span>'; }
+  presets.forEach((pr,i)=>{
+    const row=document.createElement('div'); row.className='preset-row';
+    row.innerHTML=`<button class="p ${activePreset===i?'sel':''}">
+        <span class="swatch" style="background:${KINDS[pr.kind].color}">${KINDS[pr.kind].glyph}</span>${pr.name}</button>
+        <button class="del" title="삭제">✕</button>`;
+    row.children[0].onclick=()=>{activePreset=i; selectedKind=pr.kind; renderPalette();};
+    row.children[1].onclick=()=>{presets.splice(i,1); if(activePreset===i)activePreset=null; renderPalette();};
+    pe.appendChild(row);
+  });
+}
+
+// ---- grid ----
+const gridEl=document.getElementById('grid');
+function buildGrid(){
+  gridEl.innerHTML='';
+  for(let r=ROWS;r>=1;r--){
+    const n=colsForRow(r);
+    const row=document.createElement('div'); row.className='gridrow';
+    const lab=document.createElement('span'); lab.className='rlabel'; lab.textContent=r; row.appendChild(lab);
+    const fill=(5-n)/2;                       // 좌우 빈 칸(회색) 폭(칸 단위)
+    if(fill>0) row.appendChild(mkVoid(fill));
+    for(let c=1;c<=n;c++){
+      const cell=document.createElement('div'); cell.className='cell'; cell.dataset.key=r+'-'+c;
+      cell.innerHTML='<span class="glyph"></span><span class="badge"></span>';
+      wireCell(cell);
+      row.appendChild(cell);
+    }
+    if(fill>0) row.appendChild(mkVoid(fill));
+    gridEl.appendChild(row);
+  }
+  renderCells();
+}
+function mkVoid(cells){ const d=document.createElement('div'); d.className='void'; d.style.width=(cells*46-4)+'px'; return d; }
+
+// ---- drag / click selection ----
+let dragKey=null, dragSet=null, dragMoved=false;
+function wireCell(cell){
+  cell.addEventListener('mousedown',e=>{ dragKey=cell.dataset.key; dragSet=new Set([dragKey]); dragMoved=false; e.preventDefault(); });
+  cell.addEventListener('mouseenter',()=>{ if(dragKey){ dragMoved=true; dragSet.add(cell.dataset.key); paintPreview(dragSet);} });
+}
+document.addEventListener('mouseup',e=>{
+  if(!dragKey) return;
+  if(dragMoved){ selection=new Set(dragSet); selectedCell=[...selection].pop(); renderCells(); renderParams(); }
+  else onCell(dragKey,e.shiftKey);
+  dragKey=null; dragSet=null;
+});
+function paintPreview(set){ [...gridEl.querySelectorAll('.cell')].forEach(el=>el.classList.toggle('selected',set.has(el.dataset.key))); }
+
+function paintKind(){ return activePreset!=null?presets[activePreset].kind:selectedKind; }
+function makePlatform(key){ const [r]=key.split('-').map(Number);
+  return activePreset!=null?clonePlatform(presets[activePreset],r):newPlatform(paintKind(),r); }
+
+function onCell(key,shift){
+  if(shift){
+    if(selection.has(key)&&selection.size>1) selection.delete(key); else selection.add(key);
+    selectedCell=key; renderCells(); renderParams(); updateStat(); return;
+  }
+  const cell=grid[key], pk=paintKind();
+  if(cell && selectedCell===key && selection.size<=1 && cell.kind===pk){
+    snapshot(); delete grid[key]; selectedCell=null; selection=new Set();     // 토글 지우기
+  }else if(cell && cell.kind!==pk){
+    snapshot(); grid[key]=makePlatform(key); selectedCell=key; selection=new Set([key]); // 다시 칠하기
+  }else if(cell){
+    selectedCell=key; selection=new Set([key]);                    // 편집 선택(변경 없음)
+  }else{
+    snapshot(); grid[key]=makePlatform(key); selectedCell=key; selection=new Set([key]); // 빈칸 칠하기
+  }
+  renderCells(); renderParams(); updateStat();
+}
+
+function renderCells(){
+  gridEl.querySelectorAll('.cell').forEach(el=>{
+    const key=el.dataset.key, cell=grid[key];
+    el.classList.toggle('selected',selection.has(key));
+    el.classList.toggle('primary',key===selectedCell);
+    el.classList.toggle('warn',lastWarn.has(key));
+    const g=el.querySelector('.glyph'), b=el.querySelector('.badge');
+    if(cell){ el.style.background=KINDS[cell.kind].color; g.textContent=cellGlyph(cell); b.textContent=badgeText(cell); }
+    else{ el.style.background=''; g.textContent=''; b.textContent=''; }
+  });
+  refresh3d();
+}
+
+// ---- param panel ----
+const paramsEl=document.getElementById('params');
+function selPlatforms(){ return [...selection].filter(k=>grid[k]); }
+function renderParams(){
+  if(!selectedCell||!grid[selectedCell]){ paramsEl.innerHTML='<div class="empty">칸을 선택하면<br>파라미터가 여기 표시됩니다.</div>'; return; }
+  const pf=grid[selectedCell], meta=KINDS[pf.kind], g=meta.group;
+  const nSel=selPlatforms().length;
+  let h=`<div class="p-kind"><span class="swatch" style="background:${meta.color}">${meta.glyph}</span>${meta.label}
+         <span class="muted" style="margin-left:auto">${selectedCell.replace('-','행 · ')}열</span></div>`;
+  if(nSel>1) h+=`<div class="selnote">▣ ${nSel}개 선택됨 — 값 변경 시 전체 적용</div>`;
+  h+=`<div class="actions">
+        <button class="mini" onclick="doCopy()">복사</button>
+        <button class="mini" onclick="doPaste()" ${clipboardCfg?'':'disabled'}>붙여넣기</button>
+        <button class="mini" onclick="savePreset()">프리셋 저장</button>
+      </div>`;
+  // 통합 발판 크기 (자동/수동)
+  const es=effSize(selectedCell);
+  h+=`<div class="param">
+        <label>발판 크기 <b id="v_size">${es}</b></label>
+        <label class="chk"><input type="checkbox" ${pf.sizeAuto?'checked':''} onchange="snapshot();setSizeAuto(this.checked)"> 자동(행 기준: ${autoSize(+selectedCell.split('-')[0])})</label>
+        <input type="range" min="1" max="10" step="0.1" value="${es}" ${pf.sizeAuto?'disabled':''} oninput="beginEdit();setSizeManual(parseFloat(this.value))" onchange="endEdit()">
+      </div><div class="divider"></div>`;
+  if(!g){ h+='<div class="muted">그 외 파라미터 없는 발판입니다.</div>'; paramsEl.innerHTML=h; return; }
+  for(const p of GROUPS[g]){
+    if(p.type==='select'){
+      h+=`<div class="param"><label>${p.label}</label>
+          <select onchange="snapshot();setParam('${p.key}',this.value)">
+          ${p.options.map(o=>`<option ${pf.params[p.key]===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
+    }else{
+      h+=`<div class="param"><label>${p.label} <b id="v_${p.key}">${pf.params[p.key]}</b></label>
+          <input type="range" min="${p.min}" max="${p.max}" step="${p.step}" value="${pf.params[p.key]}"
+          oninput="beginEdit();setParam('${p.key}',parseFloat(this.value))" onchange="endEdit()"></div>`;
+    }
+  }
+  paramsEl.innerHTML=h;
+}
+function setParam(key,val){
+  for(const k of selPlatforms()){ const g=KINDS[grid[k].kind].group;
+    if(g && GROUPS[g].some(p=>p.key===key)) grid[k].params[key]=val; }
+  const b=document.getElementById('v_'+key); if(b)b.textContent=val;
+  renderCells();
+}
+function setSizeAuto(auto){
+  for(const k of selPlatforms()){ const pf=grid[k];
+    if(auto) pf.sizeAuto=true;
+    else{ pf.sizeManual=effSize(k); pf.sizeAuto=false; } }
+  renderParams(); renderCells();
+}
+function setSizeManual(val){
+  for(const k of selPlatforms()){ grid[k].sizeAuto=false; grid[k].sizeManual=val; }
+  const b=document.getElementById('v_size'); if(b)b.textContent=val;
+  refresh3d();
+}
+
+// ---- copy / paste / preset ----
+function doCopy(){ if(selectedCell&&grid[selectedCell]){ clipboardCfg=clonePlatform(grid[selectedCell]); renderParams(); } }
+function doPaste(){ if(!clipboardCfg) return;
+  snapshot();
+  const targets=selection.size?[...selection]:(selectedCell?[selectedCell]:[]);
+  for(const k of targets) grid[k]=clonePlatform(clipboardCfg,+k.split('-')[0]);
+  renderCells(); renderParams(); updateStat();
+}
+function savePreset(){ if(!selectedCell||!grid[selectedCell]) return;
+  const def=KINDS[grid[selectedCell].kind].label;
+  const name=prompt('프리셋 이름:',def); if(!name) return;
+  presets.push(Object.assign({name},clonePlatform(grid[selectedCell])));
+  activePreset=presets.length-1; selectedKind=grid[selectedCell].kind; renderPalette();
+}
+
+function updateStat(){
+  const total=[...Array(ROWS)].reduce((s,_,i)=>s+colsForRow(i+1),0);
+  document.getElementById('stat').textContent=`배치된 발판: ${Object.keys(grid).length} / ${total}`;
+  updateAnalysis();
+  refresh3d();
+  refreshSide();
+}
+
+// ---- 분석: 난이도 점수 / 클리어 시간 / 규칙 검증 / 점프 경고 ----
+let lastWarn=new Set();
+const DIFFBASE={plain:1,moving:3,rotplat:3,vanish:3.5,spinner:5,pushwall:4.5,intpush:4.5,pendulum:5,lava:6,spike:6,laser:6};
+function computeJumpWarn(){
+  const length=parseFloat(gv('len'))||120, height=parseFloat(gv('hgt'))||100, zig=parseFloat(gv('zig'))||8, N=21, JUMP_MAX=24;
+  const byRow={};
+  for(const key in grid){ const r=+key.split('-')[0]; (byRow[r]=byRow[r]||[]).push(key); }
+  const rows=Object.keys(byRow).map(Number).sort((a,b)=>a-b);
+  const pos=key=>{ const[r,c]=key.split('-').map(Number); const n=colsForRow(r); return [slotOf(c,n)*zig, height*hpVal(hprof,r), -length*r/N]; };
+  const warn=new Set();
+  for(let i=0;i<rows.length-1;i++){
+    for(const k of byRow[rows[i]]){
+      const p=pos(k); let min=Infinity;
+      for(const k2 of byRow[rows[i+1]]){ const q=pos(k2); const d=Math.hypot(p[0]-q[0],p[1]-q[1],p[2]-q[2]); if(d<min)min=d; }
+      if(min>JUMP_MAX) warn.add(k);
+    }
+  }
+  return warn;
+}
+function analyze(){
+  const cells=Object.entries(grid); const total=cells.length;
+  let sum=0, hazard=0, plain=0; const kindsUsed=new Set(), rows=new Set();
+  for(const[key,pf]of cells){
+    let s=DIFFBASE[pf.kind]||3; const P=pf.params;
+    if(P.Speed) s+=(Math.abs(P.Speed)-3)*0.15;
+    if(P.Cycle) s+=(2-P.Cycle)*0.2;
+    s+=(5-(pf.sizeAuto?autoSize(+key.split('-')[0]):pf.sizeManual))*0.1;
+    sum+=s; rows.add(+key.split('-')[0]);
+    const g=KINDS[pf.kind].group;
+    if(pf.kind==='plain') plain++;
+    if(g==='redhaz'||g==='purhaz'){ hazard++; kindsUsed.add(pf.kind); }
+  }
+  const score=total?Math.max(1,Math.min(10,Math.round(sum/total*1.5))):0;
+  const time=Math.round(rows.size*1.2+hazard*0.6);
+  return {total,score,time,hazardKinds:kindsUsed.size,plainRatio:total?plain/total:0,hazardRatio:total?hazard/total:0,warn:computeJumpWarn()};
+}
+function updateAnalysis(){
+  const a=analyze(); lastWarn=a.warn;
+  gridEl.querySelectorAll('.cell').forEach(el=>el.classList.toggle('warn',lastWarn.has(el.dataset.key)));
+  renderAnalysis(a);
+}
+function renderAnalysis(a){
+  const el=document.getElementById('analysis');
+  if(!a.total){ el.innerHTML='<div class="pal-title">📊 세모 분석</div><div class="muted" style="font-size:11px">발판을 배치하면 분석이 표시됩니다.</div>'; return; }
+  const scoreCol=a.score>=8?'#ef4444':a.score>=5?'#eab308':'#22c55e';
+  const suggest=a.score>=8?'지옥':a.score>=5?'보통':'쉬움';
+  const kindsOk=a.hazardKinds>=2&&a.hazardKinds<=4;
+  const plainPct=Math.round(a.plainRatio*100);
+  const plainOk=a.plainRatio>=0.2;
+  el.innerHTML=`<div class="pal-title">📊 세모 분석</div>
+    <div class="an-row"><span>난이도 점수</span><b style="color:${scoreCol}">${a.score}/10 · ${suggest}</b></div>
+    <div class="gauge"><i style="width:${a.score*10}%;background:${scoreCol}"></i></div>
+    <div class="an-row"><span>예상 클리어(실력자)</span><b>~${a.time}초</b></div>
+    <div class="an-row"><span>장치 종류</span><b class="${kindsOk?'ok':'warnc'}">${a.hazardKinds}종 ${kindsOk?'✓':'⚠ 2~4권장'}</b></div>
+    <div class="an-row"><span>평범 발판 비율</span><b class="${plainOk?'ok':'warnc'}">${plainPct}% ${plainOk?'✓':'⚠ 쉴 곳↑'}</b></div>
+    <div class="an-row"><span>점프 경고</span><b class="${lastWarn.size?'warnc':'ok'}">${lastWarn.size?lastWarn.size+'곳 ⚠':'없음 ✓'}</b></div>
+    ${lastWarn.size?'<div class="muted" style="font-size:11px">노란 테두리 칸 → 다음 발판까지 점프 불가 거리(허용되지만 주의)</div>':''}`;
+}
+function mirror(){
+  snapshot(); const ng={};
+  for(const key in grid){ const[r,c]=key.split('-').map(Number); const n=colsForRow(r); ng[r+'-'+(n+1-c)]=grid[key]; }
+  for(const k in grid)delete grid[k]; Object.assign(grid,ng);
+  selectedCell=null; selection=new Set(); renderCells(); renderParams(); updateStat();
+}
+function clearAll(){ snapshot(); for(const k in grid)delete grid[k]; selectedCell=null; selection=new Set(); renderCells(); renderParams(); updateStat(); }
+
+// ---- history (undo/redo) + save/load ----
+const VERSION='1.3';
+let history=[], future=[], editing=false;
+function gv(id){ return document.getElementById(id).value; }
+function curGlobals(){ return {secNum:gv('secNum'),len:gv('len'),hgt:gv('hgt'),zig:gv('zig'),name:gv('secName'),diff:gv('secDiff')}; }
+function setGlobals(g){ if(!g)return; for(const id of ['secNum','len','hgt','zig','secName','secDiff']){ const key={secName:'name',secDiff:'diff'}[id]||id; if(g[key]!=null) document.getElementById(id).value=g[key]; } }
+function stateObj(){ return {version:VERSION, globals:curGlobals(), grid:JSON.parse(JSON.stringify(grid)), presets:JSON.parse(JSON.stringify(presets)), hprof:[...hprof]}; }
+function applyState(d){
+  for(const k in grid)delete grid[k];
+  Object.assign(grid, JSON.parse(JSON.stringify(d.grid||{})));
+  setGlobals(d.globals);
+  presets.length=0; if(Array.isArray(d.presets)) presets.push(...JSON.parse(JSON.stringify(d.presets)));
+  hprof=(Array.isArray(d.hprof)&&d.hprof.length===ROWS)?d.hprof.slice():Array.from({length:ROWS},(_,i)=>(i+1)/21);
+  selectedCell=null; selection=new Set();
+  renderPalette(); renderCells(); renderParams(); updateStat();
+}
+function cloneState(){ return {grid:JSON.parse(JSON.stringify(grid)), globals:curGlobals(), hprof:[...hprof]}; }
+function snapshot(){ history.push(cloneState()); if(history.length>100)history.shift(); future=[]; }
+function restoreState(s){
+  for(const k in grid)delete grid[k];
+  Object.assign(grid, JSON.parse(JSON.stringify(s.grid)));
+  setGlobals(s.globals);
+  if(Array.isArray(s.hprof)) hprof=s.hprof.slice();
+  selectedCell=null; selection=new Set();
+  renderCells(); renderParams(); updateStat();
+}
+function undo(){ if(!history.length)return; future.push(cloneState()); restoreState(history.pop()); }
+function redo(){ if(!future.length)return; history.push(cloneState()); restoreState(future.pop()); }
+function beginEdit(){ if(!editing){ snapshot(); editing=true; } }
+function endEdit(){ editing=false; }
+document.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if((e.ctrlKey||e.metaKey) && !e.shiftKey && k==='z'){ e.preventDefault(); undo(); }
+  else if((e.ctrlKey||e.metaKey) && (k==='y' || (e.shiftKey&&k==='z'))){ e.preventDefault(); redo(); }
+});
+// 단축키: 숫자/문자 → 팔레트 선택 (입력창에서는 무시)
+const KEYMAP={'1':'plain','2':'moving','3':'rotplat','4':'vanish','5':'spinner','6':'pushwall','7':'intpush','8':'pendulum','9':'lava','0':'spike','l':'laser'};
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  const t=(document.activeElement&&document.activeElement.tagName)||'';
+  if(t==='INPUT'||t==='TEXTAREA'||t==='SELECT') return;
+  const kind=KEYMAP[e.key.toLowerCase()];
+  if(kind){ selectedKind=kind; activePreset=null; renderPalette(); }
+});
+
+function serialize(){ return JSON.stringify(stateObj(), null, 1); }
+function outMode(kind){
+  const T={
+    luau:['생성된 Luau','— Builder + PlatformController'],
+    json:['세모 저장 데이터 (JSON)','— 복사해서 보관 · 불러오려면 이 칸에 붙여넣고 “불러오기”'],
+    assembly:['조립 스크립트 (OctagonAssembler)','— ServerScriptService 에 Script 로'],
+  }[kind]||['생성된 Luau','— Builder + PlatformController'];
+  document.getElementById('outTitle').textContent=T[0];
+  document.getElementById('outSub').textContent=T[1];
+  const showBC=(kind==='luau');
+  document.getElementById('copyBuilder').hidden=!showBC;
+  document.getElementById('copyController').hidden=!showBC;
+  document.getElementById('copyOut').hidden=showBC;
+}
+function saveJSON(){
+  document.getElementById('out').value=serialize();
+  outMode('json');
+  document.getElementById('bottom').classList.remove('hidden');
+}
+function loadJSON(){
+  const raw=document.getElementById('out').value.trim();
+  let data; try{ data=JSON.parse(raw); }catch(e){ alert('불러오기 실패: 유효한 JSON이 아닙니다. 저장한 세모 JSON을 이 칸에 붙여넣으세요.'); return; }
+  if(!data||typeof data!=='object'||typeof data.grid!=='object'){ alert('불러오기 실패: 세모 저장 데이터 형식이 아닙니다.'); return; }
+  snapshot(); applyState(data);
+}
+function copyOut(){ navigator.clipboard.writeText(document.getElementById('out').value); }
+
+// ---- code gen ----
+function hexRGB(h){h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+let lastBuilder='', lastController='';
+
+// 셀 하나 → 종류별 지오메트리 Luau. 위험장치=밟는 base tile + 장애물(_Dev). 용암=단일 넓은 웅덩이. 레이저=base+빔.
+function emitCell(grd,length,height,zig,key,hp){
+  const N=21;
+  const[r,c]=key.split('-').map(Number); const pf=grd[key]; const n=colsForRow(r);
+  const size=pf.sizeAuto?autoSize(r):pf.sizeManual;
+  const x=+(slotOf(c,n)*zig).toFixed(2), y=+(height*hpVal(hp,r)).toFixed(2), z=+(-(length/N)*r).toFixed(2);
+  const[rr,gg,bb]=hexRGB(KINDS[pf.kind].color); const P=pf.params, K=pf.kind, g=KINDS[K].group;
+  const gray='150,157,168';
+  const attrs=`\tp:SetAttribute("Kind","${K}")\n\tp:SetAttribute("Size",${size})\n`+
+    Object.entries(P).map(([k,v])=>`\tp:SetAttribute("${k}",${typeof v==='string'?`"${v}"`:v})\n`).join('');
+  let s=`do -- ${key} ${K}\n`;
+  if(K==='lava'){
+    s+=`\tlocal p=mkP("P_${r}_${c}",${size},0.4,${size},${x},${y},${z},${rr},${gg},${bb},Enum.Material.Neon)\n`+attrs;
+  }else if(g==='redhaz'){
+    const L=P.Length||6;
+    s+=`\tmkP("P_${r}_${c}",${size},1,${size},${x},${y},${z},${gray})\n`;   // 밟는 발판(회색)
+    if(K==='spinner')   s+=`\tlocal p=mkP("P_${r}_${c}_Dev",${L},1.2,1.2,${x},${(y+2).toFixed(2)},${z},${rr},${gg},${bb},Enum.Material.Metal)\n`+attrs;
+    else if(K==='pendulum') s+=`\tlocal p=mkP("P_${r}_${c}_Dev",1.6,1.6,1.6,${x},${(y+L).toFixed(2)},${z},${rr},${gg},${bb},Enum.Material.Metal)\n`+attrs;
+    else if(K==='pushwall') s+=`\tlocal p=mkP("P_${r}_${c}_Dev",1.2,5,${L},${x},${(y+2.5).toFixed(2)},${z},${rr},${gg},${bb})\n`+attrs;
+    else                s+=`\tlocal p=mkP("P_${r}_${c}_Dev",2,2,2,${x},${(y+1.5).toFixed(2)},${z},${rr},${gg},${bb},Enum.Material.Metal)\n`+attrs; // intpush
+  }else if(K==='spike'){
+    s+=`\tmkP("P_${r}_${c}",${size},1,${size},${x},${y},${z},${gray})\n`;
+    s+=`\tlocal p=mkP("P_${r}_${c}_Dev",${(size*0.85).toFixed(2)},2.6,${(size*0.85).toFixed(2)},${x},${(y-1.4).toFixed(2)},${z},${rr},${gg},${bb},Enum.Material.DiamondPlate)\n`+attrs;
+  }else if(K==='laser'){
+    const L=P.Range||6;
+    s+=`\tmkP("P_${r}_${c}",${size},1,${size},${x},${y},${z},${gray})\n`;
+    s+=`\tlocal p=mkP("P_${r}_${c}_Dev",${L},0.4,0.4,${x},${(y+3).toFixed(2)},${z},${rr},${gg},${bb},Enum.Material.Neon)\n`+attrs;
+  }else{ // plain / moving / rotplat / vanish : 밟는 발판이 곧 장치
+    s+=`\tlocal p=mkP("P_${r}_${c}",${size},1,${size},${x},${y},${z},${rr},${gg},${bb})\n`+attrs;
+  }
+  return s+`end\n`;
+}
+
+const BUILDER_HEADER=`--[[ ===== SECTION BUILDER =====\n  실행: 커맨드바(F9→서버) 또는 서버 Script. PlatformController 와 함께 사용.\n  === 섹션 로컬 좌표 규격 (조립 스크립트용) ===\n  · Entrance(입구)=모델 로컬 원점 (0,0,0), PrimaryPart, Role="Entrance".\n  · Exit(출구)=(0, height, -length), Role="Exit". 섹션은 -Z 방향으로 뻗음.\n  · 조립 시 Entrance CFrame 을 팔각형 슬롯에 맞추면 정렬됨. ]]\n`;
+const MKP_DEF=`local M  -- 현재 만드는 섹션 모델\nlocal function mkP(name,sx,sy,sz,x,y,z,r,g,bl,mat)\n\tlocal p=Instance.new("Part")\n\tp.Name=name p.Anchored=true\n\tp.Size=Vector3.new(sx,sy,sz) p.Position=Vector3.new(x,y,z)\n\tp.Color=Color3.fromRGB(r,g,bl) if mat then p.Material=mat end\n\tp.Parent=M\n\treturn p\nend\n\n`;
+
+// 한 섹션의 모델 생성 Luau (전역 M 사용). parentExpr = "workspace" | "Sections"
+function sectionLua(st,parentExpr){
+  const G=st.globals||{};
+  const sn=String(parseInt(G.secNum)||1).padStart(2,'0');
+  const length=parseFloat(G.len)||120, height=parseFloat(G.hgt)||100, zig=parseFloat(G.zig)||8;
+  const name=(G.name||('Section_'+sn)).replace(/"/g,'');
+  const diff=G.diff||'보통';
+  const grd=st.grid||{}, hp=st.hprof;
+  const keys=Object.keys(grd).sort((a,x)=>a.split('-')[0]-x.split('-')[0] || a.split('-')[1]-x.split('-')[1]);
+  let s=`M=Instance.new("Model")\nM.Name="Section_${sn}"\n`;
+  s+=`M:SetAttribute("SectionName","${name}")\nM:SetAttribute("Difficulty","${diff}")\n`;
+  s+=`local entrance=mkP("Entrance",8,1,8,0,0,0,120,200,120)\nentrance:SetAttribute("Role","Entrance")\nM.PrimaryPart=entrance\n`;
+  for(const key of keys) s+=emitCell(grd,length,height,zig,key,hp);
+  s+=`local exit=mkP("Exit",6,1,6,0,${(+height).toFixed(2)},${(+(-length)).toFixed(2)},250,220,90)\nexit:SetAttribute("Role","Exit")\n`;
+  s+=`M.Parent=${parentExpr}\n`;
+  return {lua:s, count:keys.length, sn, name, diff};
+}
+
+function genCode(){
+  const r=sectionLua(stateObj(),'workspace');
+  const b=BUILDER_HEADER+MKP_DEF+r.lua+`print("Section_${r.sn} 생성 완료 — 발판 ${r.count}개")\n`;
+  lastBuilder=b; lastController=CONTROLLER;
+  document.getElementById('out').value=b+'\n\n'+CONTROLLER;
+  outMode('luau'); document.getElementById('octagon').classList.add('hidden');
+  document.getElementById('bottom').classList.remove('hidden');
+}
+function copyPart(which){ navigator.clipboard.writeText(which==='builder'?lastBuilder:lastController); }
+
+// ---- 보관함(여러 세모) + 일괄 내보내기 + 팔각형 미리보기 ----
+const library=[];
+const DIFFCOL={'쉬움':'#22c55e','보통':'#eab308','지옥':'#ef4444'};
+function addToLibrary(){
+  const st=stateObj();
+  library.push({name:(st.globals.name||('Section_'+String(parseInt(st.globals.secNum)||1).padStart(2,'0'))), diff:st.globals.diff||'보통', st});
+  renderLibrary();
+}
+function renderLibrary(){
+  const el=document.getElementById('library'); el.innerHTML='';
+  document.getElementById('libCount').textContent=library.length?`(${library.length})`:'';
+  if(!library.length){ el.innerHTML='<span class="muted" style="font-size:11px">“보관함에 추가”로 세모를 모아 일괄 내보내기</span>'; return; }
+  library.forEach((e,i)=>{
+    const row=document.createElement('div'); row.className='lib-row';
+    row.innerHTML=`<span class="dot" style="background:${DIFFCOL[e.diff]||'#888'}"></span>
+      <span class="lib-name">${e.name}</span><span class="muted lib-diff">${e.diff}</span>
+      <button class="mini" title="이 세모 불러오기">▲</button><button class="mini" title="삭제">✕</button>`;
+    row.children[3].onclick=()=>{ snapshot(); applyState(e.st); };
+    row.children[4].onclick=()=>{ library.splice(i,1); renderLibrary(); };
+    el.appendChild(row);
+  });
+}
+function batchExport(){
+  if(!library.length){ alert('보관함이 비어 있습니다. 먼저 “보관함에 추가”로 세모를 모으세요.'); return; }
+  let b=BUILDER_HEADER+`-- 보관함 ${library.length}개 세모를 Sections 폴더에 일괄 생성\n`+MKP_DEF;
+  b+=`local Sections=workspace:FindFirstChild("Sections") or Instance.new("Folder")\nSections.Name="Sections" Sections.Parent=workspace\n\n`;
+  let total=0;
+  library.forEach((e,i)=>{ const r=sectionLua(e.st,'Sections'); b+=`do -- [${i+1}] ${r.name} (${e.diff})\n${r.lua}end\n`; total+=r.count; });
+  b+=`\nprint("보관함 ${library.length}개 섹션 생성 완료 — 총 발판 ${total}개")\n`;
+  lastBuilder=b; lastController=CONTROLLER;
+  document.getElementById('out').value=b+'\n\n'+CONTROLLER;
+  outMode('luau'); document.getElementById('octagon').classList.add('hidden');
+  document.getElementById('bottom').classList.remove('hidden');
+}
+// 팔각형 조립 스크립트: Sections 폴더의 세모들을 팔각형으로 배치 (입구=바깥 링, 출구=중앙)
+function assemblyCode(){
+  const R=Math.round(parseFloat(gv('len'))||120);
+  let s=`--[[ ===== OctagonAssembler =====\n  ServerScriptService 에 Script 로. "전체 내보내기"로 만든 workspace.Sections 의\n  세모들을 팔각형으로 배치. 입구=바깥 링(스폰), 출구=중앙(전망대).\n  각 세모 Entrance(Role="Entrance", PrimaryPart)를 링 위에 놓고 진행방향(-Z)이 중심을 향하게 함. ]]\n`;
+  s+=`local Sections=workspace:WaitForChild("Sections")\n`;
+  s+=`local RING=${R}   -- 입구 링 반지름(스터드). 세모 총 길이 기준, 조정 가능.\n`;
+  s+=`local CENTER=Vector3.new(0,0,0)   -- 팔각형 중심(전망대 바닥)\n\n`;
+  s+=`-- (선택) 난이도 비율 추첨: 여러 세모 중 8개를 비율대로 골라 배치.\n`;
+  s+=`local PICK_BY_DIFFICULTY=false\n`;
+  s+=`local RATIO={["쉬움"]=2,["보통"]=4,["지옥"]=2}\n\n`;
+  s+=`local function collect()\n\tlocal t={}\n\tfor _,m in ipairs(Sections:GetChildren()) do\n\t\tif m:IsA("Model") and m.PrimaryPart then table.insert(t,m) end\n\tend\n\treturn t\nend\n\n`;
+  s+=`local function lottery(all)\n\tlocal bucket={}\n\tfor _,m in ipairs(all) do\n\t\tlocal d=m:GetAttribute("Difficulty") or "보통"\n\t\tbucket[d]=bucket[d] or {} table.insert(bucket[d],m)\n\tend\n\tlocal chosen={}\n\tfor diff,n in pairs(RATIO) do\n\t\tlocal b=bucket[diff] or {}\n\t\tfor _=1,math.min(n,#b) do table.insert(chosen,table.remove(b,math.random(#b))) end\n\tend\n\treturn chosen\nend\n\n`;
+  s+=`local sections=collect()\n`;
+  s+=`if PICK_BY_DIFFICULTY then sections=lottery(sections) end\n\n`;
+  s+=`for i=1,math.min(#sections,8) do\n\tlocal m=sections[i]\n\tlocal a=math.rad((i-1)*45)\n\tlocal pos=CENTER+Vector3.new(math.cos(a),0,math.sin(a))*RING\n\tm:PivotTo(CFrame.lookAt(pos, Vector3.new(CENTER.X,pos.Y,CENTER.Z)))\nend\n`;
+  s+=`print(("팔각형 조립 완료 — 세모 %d개 배치"):format(math.min(#sections,8)))\n`;
+  document.getElementById('out').value=s;
+  outMode('assembly'); document.getElementById('octagon').classList.add('hidden');
+  document.getElementById('bottom').classList.remove('hidden');
+}
+function octagonPreview(){
+  const picks=library.slice(0,8); const cx=170,cy=170,R=150;
+  const corner=k=>{ const a=(k*45-112.5)*Math.PI/180; return [cx+R*Math.cos(a), cy+R*Math.sin(a)]; };
+  let svg=`<svg viewBox="0 0 340 360" width="340" height="360">`;
+  for(let i=0;i<8;i++){
+    const[x1,y1]=corner(i),[x2,y2]=corner(i+1); const e=picks[i];
+    const col=e?(DIFFCOL[e.diff]||'#556'):'#222a35';
+    svg+=`<polygon points="${cx},${cy} ${x1.toFixed(1)},${y1.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}" fill="${col}" fill-opacity="${e?0.85:0.25}" stroke="#0b0e13" stroke-width="2"/>`;
+    const mx=(x1+x2)/2,my=(y1+y2)/2, lx=cx+(mx-cx)*0.68, ly=cy+(my-cy)*0.68;
+    svg+=`<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" font-size="10" font-weight="600" fill="${e?'#0b0e13':'#8b98a6'}" text-anchor="middle" dominant-baseline="middle">${(e?e.name:'빈 슬롯').slice(0,9)}</text>`;
+  }
+  svg+=`<circle cx="${cx}" cy="${cy}" r="11" fill="#4ea1ff"/><text x="${cx}" y="${cy+3}" font-size="9" fill="#04121f" text-anchor="middle">중앙</text></svg>`;
+  const el=document.getElementById('octagon');
+  el.innerHTML=`<div class="oct-head"><b>⬡ 팔각형 조립 미리보기</b><span class="muted">— 보관함 앞 8개 · 입구=바깥/출구=중앙</span><button class="mini" style="margin-left:auto" onclick="document.getElementById('octagon').classList.add('hidden')">닫기</button></div>`+svg;
+  el.classList.remove('hidden'); document.getElementById('bottom').classList.add('hidden');
+}
+
+const CONTROLLER=`--[[ ===== PlatformController =====
+  ServerScriptService 에 Script 로 넣으세요. Builder 와 함께 사용.
+  시작 시 1회 스캔 후 캐싱(매 프레임 GetDescendants 안 함).
+  · 이동/승강/회전 발판: 밟은 플레이어를 CFrame 델타로 함께 옮김(회전은 방향까지).
+  · 빨강(회전봉/미는벽/간헐밀치기/시계추): 접촉 넉백.
+  · 보라(용암 상시 / 가시·레이저 주기점멸): 치명 시 Entrance 로 리스폰. ]]
+local RS=game:GetService("RunService")
+local Players=game:GetService("Players")
+
+-- 1회 스캔 후 캐싱
+local all,entrance={},nil
+for _,d in ipairs(workspace:GetDescendants()) do
+\tif d:IsA("BasePart") then
+\t\tif d:GetAttribute("Kind") then table.insert(all,d) end
+\t\tif d:GetAttribute("Role")=="Entrance" then entrance=d end
+\tend
+end
+
+local origin={}
+for _,p in ipairs(all) do origin[p]=p.CFrame end
+
+local movers,rotplats,spinners,pendulums,walls,pistons,spikes,beams,lavas={},{},{},{},{},{},{},{},{}
+for _,p in ipairs(all) do
+\tlocal k=p:GetAttribute("Kind")
+\tif k=="moving" then table.insert(movers,p)
+\telseif k=="rotplat" then table.insert(rotplats,p)
+\telseif k=="spinner" then table.insert(spinners,p)
+\telseif k=="pendulum" then table.insert(pendulums,p)
+\telseif k=="pushwall" then table.insert(walls,p)
+\telseif k=="intpush" then table.insert(pistons,p)
+\telseif k=="spike" then table.insert(spikes,p)
+\telseif k=="laser" then table.insert(beams,p)
+\telseif k=="lava" then table.insert(lavas,p)
+\tend
+end
+
+local lethal={}   -- 가시/레이저: 지금 치명 상태인지
+local rayp=RaycastParams.new()
+rayp.FilterType=Enum.RaycastFilterType.Exclude
+
+local function humOf(hit) return hit.Parent and hit.Parent:FindFirstChildOfClass("Humanoid") end
+-- 파트가 속한 섹션의 Entrance (다중 섹션 대응)
+local function findEntrance(part)
+\tlocal m=part.Parent
+\twhile m do
+\t\tif m:IsA("Model") then
+\t\t\tif m.PrimaryPart and m.PrimaryPart:GetAttribute("Role")=="Entrance" then return m.PrimaryPart end
+\t\t\tfor _,d in ipairs(m:GetChildren()) do
+\t\t\t\tif d:IsA("BasePart") and d:GetAttribute("Role")=="Entrance" then return d end
+\t\t\tend
+\t\tend
+\t\tm=m.Parent
+\tend
+\treturn entrance
+end
+local function respawn(hit,ent)
+\tent=ent or entrance; if not ent then return end
+\tlocal hrp=hit.Parent and hit.Parent:FindFirstChild("HumanoidRootPart")
+\tif hrp then hrp.CFrame=ent.CFrame+Vector3.new(0,5,0) end
+end
+local function knock(hit,part,force)
+\tlocal root=hit.Parent and hit.Parent:FindFirstChild("HumanoidRootPart")
+\tif root then root.AssemblyLinearVelocity=(root.Position-part.Position).Unit*force end
+end
+
+-- Heartbeat: 캐시 배열만 순회하며 이동/회전/장치 애니메이션
+RS.Heartbeat:Connect(function()
+\tlocal t=os.clock()
+\tlocal dcf={}   -- part -> 이번 프레임 CFrame 델타(밟은 플레이어 캐리)
+
+\tfor _,p in ipairs(movers) do   -- 왕복/승강
+\t\tlocal o=origin[p]
+\t\tlocal off=math.sin(t*(p:GetAttribute("Speed") or 2)+math.rad(p:GetAttribute("Phase") or 0))*(p:GetAttribute("Range") or 6)
+\t\tlocal ax=p:GetAttribute("Axis") or "X"
+\t\tlocal v=(ax=="Y" and Vector3.new(0,off,0)) or (ax=="Z" and Vector3.new(0,0,off)) or Vector3.new(off,0,0)
+\t\tlocal target=o+v
+\t\tdcf[p]=target*p.CFrame:Inverse(); p.CFrame=target
+\tend
+\tfor _,p in ipairs(rotplats) do   -- 제자리 자전(방향까지 캐리)
+\t\tlocal o=origin[p]
+\t\tlocal target=o*CFrame.Angles(0,t*(p:GetAttribute("Speed") or 2)+math.rad(p:GetAttribute("Phase") or 0),0)
+\t\tdcf[p]=target*p.CFrame:Inverse(); p.CFrame=target
+\tend
+\tfor _,p in ipairs(spinners) do   -- 회전봉: 피벗 orbit
+\t\tlocal o=origin[p]; local L=p:GetAttribute("Length") or 6
+\t\tp.CFrame=CFrame.new(o.Position)*CFrame.Angles(0,t*(p:GetAttribute("Speed") or 3),0)*CFrame.new(L/2,0,0)
+\tend
+\tfor _,p in ipairs(pendulums) do   -- 시계추: 스윙
+\t\tlocal o=origin[p]; local L=p:GetAttribute("Length") or 6
+\t\tp.CFrame=CFrame.new(o.Position)*CFrame.Angles(0,0,math.sin(t*(p:GetAttribute("Speed") or 3))*math.rad(60))*CFrame.new(0,-L/2,0)
+\tend
+\tfor _,p in ipairs(walls) do   -- 미는벽: 축 sweep
+\t\tlocal o=origin[p]
+\t\tlocal off=math.sin(t*(p:GetAttribute("Speed") or 3)+math.rad(p:GetAttribute("Phase") or 0))*(p:GetAttribute("Range") or 6)
+\t\tp.CFrame=o+Vector3.new(off,0,0)
+\tend
+\tfor _,p in ipairs(pistons) do   -- 간헐밀치기: 주기로 돌출/복귀
+\t\tlocal o=origin[p]; local cyc=p:GetAttribute("Cycle") or 2
+\t\tlocal ph=(t%cyc)/cyc
+\t\tlocal ext=(ph<0.3 and ph/0.3) or (ph<0.5 and 1-(ph-0.3)/0.2) or 0
+\t\tp.CFrame=o+Vector3.new(ext*(p:GetAttribute("Range") or 6),0,0)
+\tend
+\tfor _,p in ipairs(spikes) do   -- 가시: 주기로 솟음(치명)/숨음
+\t\tlocal o=origin[p]; local cyc=p:GetAttribute("Cycle") or 2; local warn=math.min(p:GetAttribute("Warn") or 1,cyc*0.4)
+\t\tlocal ph=(t%cyc)/cyc; local up=ph>=(0.5+warn/cyc)
+\t\tlethal[p]=up
+\t\tlocal ty=o.Position.Y+(up and 2.8 or 0)
+\t\tp.Position=p.Position:Lerp(Vector3.new(o.Position.X,ty,o.Position.Z),0.35)
+\tend
+\tfor _,p in ipairs(beams) do   -- 레이저: 주기로 켜짐(치명)/꺼짐, 켜지기 전 경고 점멸
+\t\tlocal cyc=p:GetAttribute("Cycle") or 2; local warn=math.min(p:GetAttribute("Warn") or 1,cyc*0.4)
+\t\tlocal ph=(t%cyc)/cyc
+\t\tif ph<0.5 then p.Transparency=0.85; lethal[p]=false
+\t\telseif ph<0.5+warn/cyc then p.Transparency=(math.floor(t*10)%2==0) and 0.3 or 0.8; lethal[p]=false
+\t\telse p.Transparency=0; lethal[p]=true end
+\tend
+
+\t-- 밟은 플레이어 캐리: CFrame 델타 적용(위치+방향)
+\tfor _,plr in ipairs(Players:GetPlayers()) do
+\t\tlocal ch=plr.Character
+\t\tlocal hrp=ch and ch:FindFirstChild("HumanoidRootPart")
+\t\tif hrp then
+\t\t\trayp.FilterDescendantsInstances={ch}
+\t\t\tlocal res=workspace:Raycast(hrp.Position,Vector3.new(0,-8,0),rayp)
+\t\t\tif res and dcf[res.Instance] then hrp.CFrame=dcf[res.Instance]*hrp.CFrame end
+\t\tend
+\tend
+end)
+
+-- 넉백 장치(빨강): 접촉 시 밀어냄
+for _,list in ipairs({spinners,pendulums,walls,pistons}) do
+\tfor _,p in ipairs(list) do
+\t\tp.Touched:Connect(function(hit) if humOf(hit) then knock(hit,p,p:GetAttribute("PushForce") or 80) end end)
+\tend
+end
+
+-- 즉사 장치(보라): 용암=상시, 가시/레이저=치명 상태일 때만 → 각자 속한 섹션 Entrance 로 리스폰
+local entOf={}
+for _,list in ipairs({lavas,spikes,beams}) do for _,p in ipairs(list) do entOf[p]=findEntrance(p) end end
+for _,p in ipairs(lavas) do p.Touched:Connect(function(hit) if humOf(hit) then respawn(hit,entOf[p]) end end) end
+for _,p in ipairs(spikes) do p.Touched:Connect(function(hit) if lethal[p] and humOf(hit) then respawn(hit,entOf[p]) end end) end
+for _,p in ipairs(beams) do p.Touched:Connect(function(hit) if lethal[p] and humOf(hit) then respawn(hit,entOf[p]) end end) end
+
+-- 소멸 발판 3종: 지연 / 주기 / 복귀
+for _,p in ipairs(all) do
+\tif p:GetAttribute("Kind")=="vanish" then
+\t\tlocal mode=p:GetAttribute("Mode") or "지연"
+\t\tif mode=="주기" then   -- 밟든 안 밟든 주기적으로 점멸
+\t\t\ttask.spawn(function()
+\t\t\t\twhile p.Parent do
+\t\t\t\t\ttask.wait(p:GetAttribute("Cycle") or 2)
+\t\t\t\t\tlocal warn=p:GetAttribute("WarnTime") or 1; local blink=p:GetAttribute("BlinkPeriod") or 0.3
+\t\t\t\t\tlocal t0=os.clock()
+\t\t\t\t\twhile os.clock()-t0<warn do p.Transparency=(p.Transparency>0.5) and 0 or 0.6; task.wait(blink) end
+\t\t\t\t\tp.Transparency=1 p.CanCollide=false
+\t\t\t\t\ttask.wait(p:GetAttribute("RespawnTime") or 3)
+\t\t\t\t\tp.Transparency=0 p.CanCollide=true
+\t\t\t\tend
+\t\t\tend)
+\t\telse   -- 지연 / 복귀: 밟아야 작동
+\t\t\tlocal busy=false
+\t\t\tp.Touched:Connect(function(hit)
+\t\t\t\tif busy or not humOf(hit) then return end
+\t\t\t\tbusy=true
+\t\t\t\tif mode=="복귀" then   -- 즉시 떨어졌다 복귀
+\t\t\t\t\tp.CanCollide=false p.Transparency=0.6
+\t\t\t\t\ttask.wait(p:GetAttribute("RespawnTime") or 3)
+\t\t\t\t\tp.CanCollide=true p.Transparency=0
+\t\t\t\telse   -- 지연: 경고 후 사라졌다 재생
+\t\t\t\t\tlocal warn=p:GetAttribute("WarnTime") or 1; local blink=p:GetAttribute("BlinkPeriod") or 0.3
+\t\t\t\t\tlocal t0=os.clock()
+\t\t\t\t\twhile os.clock()-t0<warn do p.Transparency=(p.Transparency>0.5) and 0 or 0.6; task.wait(blink) end
+\t\t\t\t\ttask.wait(p:GetAttribute("DisappearTime") or 0.5)
+\t\t\t\t\tp.Transparency=1 p.CanCollide=false
+\t\t\t\t\ttask.wait(p:GetAttribute("RespawnTime") or 3)
+\t\t\t\t\tp.Transparency=0 p.CanCollide=true
+\t\t\t\tend
+\t\t\t\tbusy=false
+\t\t\tend)
+\t\tend
+\tend
+end
+`;
+
+// ---- 3D 미리보기 (의존성 0, Canvas 2D 손수 투영 + 시간축 애니) ----
+const cam={yaw:-0.7,pitch:0.5,radius:260};
+let prims3d=[], span3d={length:120,height:100}, target3d=[0,42,-60];
+function project(p){
+  let X=p[0]-target3d[0], Y=p[1]-target3d[1], Z=p[2]-target3d[2];
+  const cy=Math.cos(cam.yaw), sy=Math.sin(cam.yaw);
+  let x1=X*cy - Z*sy, z1=X*sy + Z*cy;
+  const cp=Math.cos(cam.pitch), sp=Math.sin(cam.pitch);
+  let y2=Y*cp - z1*sp, z2=Y*sp + z1*cp;
+  const zc=z2+cam.radius, s=560/Math.max(zc,1);
+  return {sx:300+x1*s, sy:220-y2*s, depth:zc};
+}
+function shadeColor(hex,f){ const[r,g,b]=hexRGB(hex); return `rgb(${Math.min(255,r*f)|0},${Math.min(255,g*f)|0},${Math.min(255,b*f)|0})`; }
+function localBox(sx,sy,sz,ox,oy,oz){ ox=ox||0;oy=oy||0;oz=oz||0; const hx=sx/2,hy=sy/2,hz=sz/2;
+  return [[-hx,-hy,-hz],[hx,-hy,-hz],[hx,-hy,hz],[-hx,-hy,hz],[-hx,hy,-hz],[hx,hy,-hz],[hx,hy,hz],[-hx,hy,hz]].map(v=>[v[0]+ox,v[1]+oy,v[2]+oz]); }
+function rotY(p,a){ const c=Math.cos(a),s=Math.sin(a); return [p[0]*c-p[2]*s, p[1], p[0]*s+p[2]*c]; }
+function rotZ(p,a){ const c=Math.cos(a),s=Math.sin(a); return [p[0]*c-p[1]*s, p[0]*s+p[1]*c, p[2]]; }
+function pushFaces(faces,V,color){
+  const F=[[4,5,6,7,1.0],[0,3,2,1,0.4],[0,1,5,4,0.72],[3,7,6,2,0.72],[1,2,6,5,0.85],[0,4,7,3,0.6]];
+  for(const f of F){ const pts=[V[f[0]],V[f[1]],V[f[2]],V[f[3]]];
+    faces.push({pts, depth:(pts[0].depth+pts[1].depth+pts[2].depth+pts[3].depth)/4, color:shadeColor(color,f[4])}); }
+}
+// 섹션(grid) → prim 목록. 각 prim: {L:로컬코너[8], xf:(p,t)=>월드점, color, vis?:(t)=>bool}
+function buildPrims(){ return buildPrimsFrom(grid, parseFloat(gv('len'))||120, parseFloat(gv('hgt'))||100, parseFloat(gv('zig'))||8, hprof); }
+function buildPrimsFrom(g,length,height,zig,hp){
+  const N=21;
+  const A=[]; const gray='#969da8';
+  const add=(L,xf,color,vis)=>A.push({L,xf,color,vis});
+  add(localBox(8,1,8), p=>p, '#78c878');                                  // Entrance
+  add(localBox(6,1,6), p=>[p[0],p[1]+height,p[2]-length], '#fadc5a');      // Exit
+  for(const key in g){
+    const[r,c]=key.split('-').map(Number); const pf=g[key]; const n=colsForRow(r);
+    const size=pf.sizeAuto?autoSize(r):pf.sizeManual;
+    const x=slotOf(c,n)*zig, y=height*hpVal(hp,r), z=-length*r/N;
+    const K=pf.kind, col=KINDS[K].color, grp=KINDS[K].group, P=pf.params;
+    const at=(cx,cy,cz)=>(p=>[p[0]+cx,p[1]+cy,p[2]+cz]);
+    const ph=(P.Phase||0)*Math.PI/180;
+    if(K==='lava'){ add(localBox(size,0.4,size), at(x,y,z), col); }
+    else if(K==='moving'){ const sp=P.Speed||2, rg=P.Range||6, ax=P.Axis||'X';
+      add(localBox(size,1,size), (p,t)=>{ const o=Math.sin(t*sp+ph)*rg; return [p[0]+x+(ax==='X'?o:0), p[1]+y+(ax==='Y'?o:0), p[2]+z+(ax==='Z'?o:0)]; }, col); }
+    else if(K==='rotplat'){ const sp=P.Speed||2;
+      add(localBox(size,1,size), (p,t)=>{ const q=rotY(p,t*sp+ph); return [q[0]+x,q[1]+y,q[2]+z]; }, col); }
+    else if(K==='vanish'){ const mode=P.Mode||'지연', cyc=P.Cycle||2;
+      add(localBox(size,1,size), at(x,y,z), col, mode==='주기'?(t=>(t%(cyc*2))<cyc):null); }
+    else if(grp==='redhaz'){ const sp=P.Speed||3, cyc=P.Cycle||2, rg=P.Range||6, L=P.Length||6;
+      add(localBox(size,1,size), at(x,y,z), gray);                          // 밟는 발판
+      if(K==='spinner') add(localBox(L,1.2,1.2, L/2,0,0), (p,t)=>{ const q=rotY(p,t*sp); return [q[0]+x,q[1]+y+2,q[2]+z]; }, col);
+      else if(K==='pendulum') add(localBox(1.6,1.6,1.6, 0,-L/2,0), (p,t)=>{ const q=rotZ(p,Math.sin(t*sp)*0.9); return [q[0]+x,q[1]+y+L,q[2]+z]; }, col);
+      else if(K==='pushwall') add(localBox(1.2,5,L), (p,t)=>{ const o=Math.sin(t*sp+ph)*rg; return [p[0]+x+o,p[1]+y+2.5,p[2]+z]; }, col);
+      else add(localBox(2,2,2), (p,t)=>{ const w=(t%cyc)/cyc, e=(w<0.3?w/0.3:w<0.5?1-(w-0.3)/0.2:0); return [p[0]+x+e*rg,p[1]+y+1.5,p[2]+z]; }, col); // intpush
+    }
+    else if(K==='spike'){ const cyc=P.Cycle||2; add(localBox(size,1,size), at(x,y,z), gray);
+      add(localBox(size*0.85,2.6,size*0.85), (p,t)=>{ const up=(t%cyc)/cyc>=0.5; return [p[0]+x,p[1]+y-1.4+(up?2.8:0),p[2]+z]; }, col); }
+    else if(K==='laser'){ const cyc=P.Cycle||2, L=P.Range||6; add(localBox(size,1,size), at(x,y,z), gray);
+      add(localBox(L,0.4,0.4), at(x,y+3,z), col, t=>(t%cyc)/cyc>=0.5); }
+    else add(localBox(size,1,size), at(x,y,z), col);                         // plain
+  }
+  return {prims:A,length,height};
+}
+function draw3d(t){
+  const cv=document.getElementById('cv3d'); if(!cv)return; const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  const faces=[];
+  for(const pr of prims3d){ if(pr.vis && !pr.vis(t)) continue;
+    pushFaces(faces, pr.L.map(p=>project(pr.xf(p,t))), pr.color); }
+  faces.sort((a,z)=>z.depth-a.depth);
+  for(const fc of faces){ if(fc.pts.some(p=>p.depth<=1)) continue;
+    ctx.beginPath(); ctx.moveTo(fc.pts[0].sx,fc.pts[0].sy);
+    for(let i=1;i<4;i++) ctx.lineTo(fc.pts[i].sx,fc.pts[i].sy);
+    ctx.closePath(); ctx.fillStyle=fc.color; ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=0.5; ctx.stroke(); }
+}
+// 애니메이션 재생/정지
+const d3={drag:false,lx:0,ly:0}; let playing=false, animStart=0, pauseT=0, rafId=0;
+function curT(){ return playing? pauseT+(performance.now()-animStart)/1000 : pauseT; }
+function loop(){ if(!playing) return;
+  if(document.getElementById('view3d').classList.contains('hidden')){ playing=false; return; }
+  draw3d(curT()); rafId=requestAnimationFrame(loop);
+}
+function togglePlay(){
+  playing=!playing; const b=document.getElementById('playBtn');
+  if(playing){ animStart=performance.now(); if(b)b.textContent='⏸ 정지'; rafId=requestAnimationFrame(loop); }
+  else { pauseT=curT(); if(b)b.textContent='▶ 재생'; cancelAnimationFrame(rafId); }
+}
+function open3dPanel(title,sub){
+  const el=document.getElementById('view3d');
+  el.innerHTML=`<div class="oct-head"><b>${title}</b><span class="muted">${sub}</span>
+    <button class="mini" id="playBtn" style="margin-left:auto" onclick="togglePlay()">▶ 재생</button>
+    <button class="mini" onclick="playing=false;document.getElementById('view3d').classList.add('hidden')">닫기</button></div>`;
+  const cv=document.createElement('canvas'); cv.id='cv3d'; cv.width=600; cv.height=440;
+  cv.style.cssText='border-radius:8px;background:#0b0e13;cursor:grab;touch-action:none';
+  cv.addEventListener('mousedown',e=>{d3.drag=true;d3.lx=e.clientX;d3.ly=e.clientY;cv.style.cursor='grabbing';});
+  cv.addEventListener('wheel',e=>{e.preventDefault(); cam.radius=Math.max(40,cam.radius*(e.deltaY>0?1.1:0.9)); draw3d(curT());},{passive:false});
+  el.appendChild(cv); el.classList.remove('hidden');
+  document.getElementById('bottom').classList.add('hidden'); document.getElementById('octagon').classList.add('hidden');
+}
+function view3d(){
+  const S=buildPrims(); prims3d=S.prims; span3d={length:S.length,height:S.height};
+  target3d=[0, S.height*0.42, -S.length*0.5];
+  cam.radius=Math.max(S.length,S.height)*1.8||260; playing=false; pauseT=0;
+  open3dPanel('🧊 3D 미리보기','— 드래그=회전 · 휠=줌 · ▶로 움직임 재생');
+  draw3d(0);
+}
+// 팔각형 조립 3D: 보관함 앞 8개 세모를 실제 조립 변환(링 배치+중심 정렬)으로 한 씬에 렌더 → 팔각형 검증
+function assembled3d(){
+  if(!library.length){ alert('보관함에 세모를 먼저 추가하세요 (최소 1개). “📚 보관함에 추가”로 모읍니다.'); return; }
+  const RING=Math.round(parseFloat(gv('len'))||120), picks=library.slice(0,8);
+  const A=[]; let maxH=0;
+  picks.forEach((e,i)=>{
+    const st=e.st, G=st.globals||{};
+    const length=parseFloat(G.len)||120, height=parseFloat(G.hgt)||100, zig=parseFloat(G.zig)||8;
+    maxH=Math.max(maxH,height);
+    const {prims}=buildPrimsFrom(st.grid||{}, length, height, zig, st.hprof);
+    const a=i*Math.PI/4, th=a-Math.PI/2, px=RING*Math.cos(a), pz=RING*Math.sin(a);  // assemblyCode 와 동일 배치
+    for(const pr of prims) A.push({L:pr.L, color:pr.color, vis:pr.vis,
+      xf:(p,t)=>{ const w=pr.xf(p,t), q=rotY(w,th); return [q[0]+px, q[1], q[2]+pz]; }});
+  });
+  prims3d=A; span3d={length:RING,height:maxH};
+  target3d=[0, maxH*0.4, 0]; cam.radius=RING*2.8; cam.yaw=-0.7; cam.pitch=0.7; playing=false; pauseT=0;
+  open3dPanel('🌐 팔각형 3D 조립',`— 드래그=회전 · 휠=줌 · ${picks.length}개 세모 · 입구=바깥/출구=중앙(전망대)`);
+  draw3d(0);
+}
+window.addEventListener('mousemove',e=>{ if(!d3.drag)return; cam.yaw+=(e.clientX-d3.lx)*0.01; cam.pitch=Math.max(-1.45,Math.min(1.45,cam.pitch+(e.clientY-d3.ly)*0.01)); d3.lx=e.clientX; d3.ly=e.clientY; if(!playing)draw3d(curT()); });
+window.addEventListener('mouseup',()=>{ d3.drag=false; const cv=document.getElementById('cv3d'); if(cv)cv.style.cursor='grab'; });
+// 3D 패널이 열려 있으면 편집 즉시 반영(닫혀 있으면 바로 return)
+function refresh3d(){
+  const el=document.getElementById('view3d'); if(!el || el.classList.contains('hidden')) return;
+  const S=buildPrims(); prims3d=S.prims; span3d={length:S.length,height:S.height};
+  if(!playing) draw3d(curT());
+}
+
+// ---- 측면 높이 프로파일 편집 (#1 측면뷰 / #2 높이곡선) ----
+const SV={W:680,H:280,pad:34};
+const svpx=r=>SV.pad+(r/21)*(SV.W-2*SV.pad);
+const svpy=hf=>SV.H-SV.pad-hf*(SV.H-2*SV.pad);
+function svPoly(){ let s=`${svpx(0)},${svpy(0)}`; for(let r=1;r<=ROWS;r++) s+=` ${svpx(r)},${svpy(hpVal(hprof,r))}`; return s+` ${svpx(21)},${svpy(1)}`; }
+function renderSideView(){
+  const el=document.getElementById('sideview'); const height=parseFloat(gv('hgt'))||100;
+  const rowsWith=new Set(Object.keys(grid).map(k=>+k.split('-')[0]));
+  let svg=`<svg viewBox="0 0 ${SV.W} ${SV.H}" width="${SV.W}" height="${SV.H}" id="svg-side" style="touch-action:none">`;
+  for(let i=0;i<=4;i++){ const y=svpy(i/4); svg+=`<line x1="${SV.pad}" y1="${y}" x2="${SV.W-SV.pad}" y2="${y}" stroke="#2a3340"/><text x="4" y="${y+3}" font-size="9" fill="#8b98a6">${Math.round(height*i/4)}</text>`; }
+  svg+=`<text x="${svpx(0)}" y="${SV.H-8}" font-size="9" fill="#78c878" text-anchor="middle">입구</text><text x="${svpx(21)}" y="${SV.H-8}" font-size="9" fill="#fadc5a" text-anchor="middle">출구</text>`;
+  svg+=`<polyline points="${svPoly()}" fill="none" stroke="#4ea1ff" stroke-width="2"/>`;
+  svg+=`<circle cx="${svpx(0)}" cy="${svpy(0)}" r="5" fill="#78c878"/><circle cx="${svpx(21)}" cy="${svpy(1)}" r="5" fill="#fadc5a"/>`;
+  for(let r=1;r<=ROWS;r++){ const has=rowsWith.has(r);
+    svg+=`<circle class="hdot" data-r="${r}" cx="${svpx(r)}" cy="${svpy(hpVal(hprof,r))}" r="${has?6:4}" fill="${has?'#e6edf3':'#586170'}" stroke="#0b0e13" style="cursor:ns-resize"/>`; }
+  svg+=`</svg>`;
+  el.innerHTML=`<div class="oct-head"><b>📐 측면 높이 프로파일</b><span class="muted">— 점을 위아래로 드래그해 오르막 리듬(완만/급경사/평지) 조절 · 배치된 행=흰 점</span>
+    <button class="mini" style="margin-left:auto" onclick="resetHprof()">직선 리셋</button>
+    <button class="mini" onclick="document.getElementById('sideview').classList.add('hidden')">닫기</button></div>`+svg;
+  attachSideDrag();
+}
+let svDragR=null, svSnapped=false;
+function attachSideDrag(){
+  const svg=document.getElementById('svg-side'); if(!svg)return;
+  const yToHf=cy=>{ const rc=svg.getBoundingClientRect(); const y=(cy-rc.top)*(SV.H/rc.height); return Math.max(0,Math.min(1,(SV.H-SV.pad-y)/(SV.H-2*SV.pad))); };
+  svg.addEventListener('pointerdown',e=>{ if(!e.target.classList.contains('hdot'))return; svDragR=+e.target.dataset.r; svSnapped=false; svg.setPointerCapture(e.pointerId); });
+  svg.addEventListener('pointermove',e=>{ if(svDragR==null)return; if(!svSnapped){ snapshot(); svSnapped=true; }
+    hprof[svDragR-1]=yToHf(e.clientY);
+    svg.querySelector(`.hdot[data-r="${svDragR}"]`).setAttribute('cy',svpy(hprof[svDragR-1]));
+    svg.querySelector('polyline').setAttribute('points',svPoly());
+    refresh3d(); });
+  svg.addEventListener('pointerup',()=>{ svDragR=null; renderSideView(); });
+}
+function refreshSide(){ const el=document.getElementById('sideview'); if(el && !el.classList.contains('hidden') && svDragR==null) renderSideView(); }
+function resetHprof(){ snapshot(); hprof=Array.from({length:ROWS},(_,i)=>(i+1)/21); renderSideView(); refresh3d(); }
+function sideView(){ document.getElementById('sideview').classList.remove('hidden'); renderSideView(); }
+
+// ---- 참가자/주최자 모드 (M7) ----
+const ADMIN_CODE='chloe2026';   // 주최자 접속 암호 — 원하는 값으로 바꿔서 ?admin=값 으로 접속
+function isAdmin(){ return new URLSearchParams(location.search).get('admin')===ADMIN_CODE; }
+function applyMode(){
+  const admin=isAdmin();
+  document.querySelectorAll('[data-role="admin"]').forEach(el=>el.style.display=admin?'':'none');
+  document.getElementById('modeBadge').textContent=admin?'👑 주최자':'🎮 참가자';
+  document.getElementById('contestBanner').style.display=admin?'none':'';
+}
+// ⚙️ 공모전 제출 설정 — 아래 두 값을 본인 Supabase 프로젝트 값으로 채우면 제출이 켜집니다.
+//   (anon 공개키만! service_role 비밀키 아님. 배포 사이트 소스에 노출돼도 RLS insert-only 로 안전)
+const SUPABASE_URL='https://tgsgigiplayvfuazfstw.supabase.co';
+const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnc2dpZ2lwbGF5dmZ1YXpmc3R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0NjYzODIsImV4cCI6MjEwMDA0MjM4Mn0.pPLuCPjFxAPMuOyiB_2_hIdgvnuZFoC9QzrdByDVk1s';
+async function submit(){
+  if(!Object.keys(grid).length){ alert('발판을 먼저 배치해 주세요.'); return; }
+  if(!SUPABASE_URL || !SUPABASE_ANON){ alert('제출 기능이 아직 설정되지 않았어요 (주최자 준비중).\n지금은 “💾 세모 저장”으로 JSON을 보관해 두세요.'); return; }
+  const nick=(prompt('제출자 닉네임(로블록스 아이디 등):','')||'').trim();
+  if(!nick) return;
+  const a=analyze();
+  if(a.hazardKinds<2 && !confirm('위험 장치가 2종 미만이라 단조로울 수 있어요. 그래도 제출할까요?')) return;
+  const st=stateObj(), mapName=st.globals.name||'무제 세모';
+  const btn=document.querySelector('button.submit'); if(btn){btn.disabled=true;btn.textContent='제출 중…';}
+  try{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/submissions',{
+      method:'POST',
+      headers:{apikey:SUPABASE_ANON, Authorization:'Bearer '+SUPABASE_ANON, 'Content-Type':'application/json', Prefer:'return=minimal'},
+      body:JSON.stringify({name:mapName, submitter:nick, difficulty:st.globals.diff||'보통', score:a.score, data:st})
+    });
+    if(res.ok) alert('제출 완료! 응모해줘서 고마워요 🎉');
+    else alert('제출 실패 ('+res.status+'): '+(await res.text()).slice(0,150));
+  }catch(e){ alert('제출 실패(네트워크): '+e.message); }
+  finally{ if(btn){btn.disabled=false;btn.textContent='🏆 제출하기';} }
+}
+
+// init
+document.getElementById('ver').textContent='v'+VERSION;
+renderPalette(); renderLibrary(); buildGrid(); updateStat(); applyMode();
+</script>
