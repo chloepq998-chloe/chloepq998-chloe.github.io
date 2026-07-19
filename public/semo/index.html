@@ -109,11 +109,11 @@
 
 <div id="top">
   <h1>🔺 세모 섹션 에디터</h1>
-  <div class="g"><span class="muted">섹션 번호</span><input id="secNum" type="number" value="1" min="1"></div>
-  <div class="g"><span class="muted">총 길이</span><input id="len" type="number" value="120" onchange="updateStat()"></div>
-  <div class="g"><span class="muted">오르막 높이</span><input id="hgt" type="number" value="100" onchange="updateStat()"></div>
-  <div class="g"><span class="muted">지그재그 폭</span><input id="zig" type="number" value="8" onchange="updateStat()"></div>
-  <div class="g"><span class="muted">이름</span><input id="secName" type="text" placeholder="세모 이름" style="width:120px"></div>
+  <div class="g" data-role="admin"><span class="muted">섹션 번호</span><input id="secNum" type="number" value="1" min="1"></div>
+  <div class="g" data-role="admin"><span class="muted">총 길이</span><input id="len" type="number" value="120" onchange="updateStat()"></div>
+  <div class="g" data-role="admin"><span class="muted">오르막 높이</span><input id="hgt" type="number" value="100" onchange="updateStat()"></div>
+  <div class="g" data-role="admin"><span class="muted">지그재그 폭</span><input id="zig" type="number" value="8" onchange="updateStat()"></div>
+  <div class="g" data-role="admin"><span class="muted">이름</span><input id="secName" type="text" placeholder="세모 이름" style="width:120px"></div>
   <div class="g"><span class="muted">난이도</span><select id="secDiff"><option>쉬움</option><option selected>보통</option><option>지옥</option></select></div>
   <div class="g muted" style="margin-left:auto" id="stat"></div>
   <div class="g" id="modeBadge"></div>
@@ -518,7 +518,7 @@ function mirror(){
 function clearAll(){ snapshot(); for(const k in grid)delete grid[k]; selectedCell=null; selection=new Set(); renderCells(); renderParams(); updateStat(); }
 
 // ---- history (undo/redo) + save/load ----
-const VERSION='1.3';
+const VERSION='1.4';
 let history=[], future=[], editing=false;
 function gv(id){ return document.getElementById(id).value; }
 function curGlobals(){ return {secNum:gv('secNum'),len:gv('len'),hgt:gv('hgt'),zig:gv('zig'),name:gv('secName'),diff:gv('secDiff')}; }
