@@ -540,7 +540,7 @@ function mirror(){
 function clearAll(){ snapshot(); for(const k in grid)delete grid[k]; selectedCell=null; selection=new Set(); renderCells(); renderParams(); updateStat(); }
 
 // ---- history (undo/redo) + save/load ----
-const VERSION='1.9';
+const VERSION='2.0';
 let history=[], future=[], editing=false;
 function gv(id){ return document.getElementById(id).value; }
 function curGlobals(){ return {secNum:gv('secNum'),len:gv('len'),hgt:gv('hgt'),zig:gv('zig'),name:gv('secName'),diff:gv('secDiff')}; }
@@ -744,8 +744,9 @@ function roundSystemCode(){
   b+=MKP_DEF;
   library.forEach((e,i)=>{ const r=sectionLua(e.st,'pool'); b+=`do -- [${i+1}] ${r.name} (${e.diff})\n${r.lua}end\n`; });
   b+=`print("풀 생성 완료 — 세모 ${library.length}개 (ServerStorage.SectionPool)")\n`;
-  const gs=GAMESERVER.split('__RING__').join(String(RING));
-  document.getElementById('out').value=b+'\n\n'+gs;
+  const HEIGHT=Math.round(parseFloat(gv('hgt'))||100);
+  const gs=GAMESERVER.split('__RING__').join(String(RING)).split('__HEIGHT__').join(String(HEIGHT));
+  document.getElementById('out').value=b+'\n\n'+gs+'\n\n'+UI_SCRIPT;
   outMode('round'); document.getElementById('octagon').classList.add('hidden');
   document.getElementById('bottom').classList.remove('hidden');
 }
@@ -959,6 +960,7 @@ local ServerStorage=game:GetService("ServerStorage")
 
 -- ===== 설정 =====
 local RING=__RING__            -- 입구 링 반지름(스터드)
+local HEIGHT=__HEIGHT__        -- 세모 오르막 높이 (완주 지점/전망대 위치용)
 local ROUND_TIME=300           -- 라운드 길이(초). 5분=300
 local SLOTS=8                  -- 한 라운드에 배치할 세모 수
 local USE_RATIO=true           -- true=난이도 비율대로 / false=완전 무작위
@@ -1133,17 +1135,116 @@ local function assemble(chosen)
 	end
 end
 
+-- ===== 게임 규칙: 스폰 / 킬존 / 완주 / 타이머 / 명단 =====
+local ReplicatedStorage=game:GetService("ReplicatedStorage")
+local remote=ReplicatedStorage:FindFirstChild("SemoRemote") or Instance.new("RemoteEvent")
+remote.Name="SemoRemote"; remote.Parent=ReplicatedStorage
+local KILL_Y=-25
+local finished={}   -- 이번 라운드 완주자 [player]=true
+
+-- 전망대(완주자 도착지) + 완주 감지 존 (한 번만 생성)
+local deck=Instance.new("Part")
+deck.Name="전망대"; deck.Anchored=true; deck.Size=Vector3.new(24,1,24)
+deck.Position=Vector3.new(0,HEIGHT+8,0); deck.Color=Color3.fromRGB(250,220,90); deck.Parent=workspace
+local finishZone=Instance.new("Part")
+finishZone.Name="FinishZone"; finishZone.Anchored=true; finishZone.CanCollide=false; finishZone.Transparency=1
+finishZone.Size=Vector3.new(26,12,26); finishZone.Position=Vector3.new(0,HEIGHT+5,0); finishZone.Parent=workspace
+finishZone.Touched:Connect(function(hit)
+	local plr=Players:GetPlayerFromCharacter(hit.Parent)
+	if plr and not finished[plr] then
+		finished[plr]=true
+		local hrp=hit.Parent:FindFirstChild("HumanoidRootPart")
+		if hrp then hrp.CFrame=deck.CFrame+Vector3.new(0,4,0) end
+		remote:FireAllClients("finisher", plr.Name)
+	end
+end)
+
+-- 스폰: 각 세모 입구에 SpawnLocation (라운드마다 갱신)
+local function setupSpawns()
+	local sf=workspace:FindFirstChild("SpawnPoints"); if sf then sf:Destroy() end
+	sf=Instance.new("Folder"); sf.Name="SpawnPoints"; sf.Parent=workspace
+	local sec=workspace:FindFirstChild("Sections"); if not sec then return end
+	for _,m in ipairs(sec:GetChildren()) do
+		local ent=m:FindFirstChild("Entrance")
+		if ent then
+			local sp=Instance.new("SpawnLocation")
+			sp.Size=Vector3.new(6,1,6); sp.CFrame=ent.CFrame+Vector3.new(0,3,0)
+			sp.Neutral=true; sp.Duration=0; sp.Parent=sf
+		end
+	end
+end
+
+-- 킬존: 아래로 떨어지면 리스폰(=입구)
+RS.Heartbeat:Connect(function()
+	for _,plr in ipairs(Players:GetPlayers()) do
+		local hrp=plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+		if hrp and hrp.Position.Y<KILL_Y then plr:LoadCharacter() end
+	end
+end)
+
 -- ===== 라운드 루프 =====
 task.spawn(function()
 	while true do
 		local chosen=pick()
 		if #chosen==0 then warn("SectionPool 이 비어 있음 — 풀 빌더를 먼저 실행하세요"); task.wait(5)
 		else
-			assemble(chosen); rebuild()
+			assemble(chosen); rebuild(); setupSpawns()
+			table.clear(finished); remote:FireAllClients("reset")
+			for _,plr in ipairs(Players:GetPlayers()) do plr:LoadCharacter() end
 			print(("라운드 시작 — 세모 %d개"):format(#chosen))
-			-- TODO: 여기에 스폰/카운트다운/완주 처리 추가 (4단계 게임루프 참고)
-			task.wait(ROUND_TIME)
+			for tleft=ROUND_TIME,1,-1 do remote:FireAllClients("time", tleft); task.wait(1) end
+			remote:FireAllClients("roundend"); task.wait(4)
 		end
+	end
+end)
+`;
+const UI_SCRIPT=`--[[ ===== 3) UI: 카운트다운 + 완주자 명단 =====
+  StarterGui 에 LocalScript 로 넣으세요. ]]
+local ReplicatedStorage=game:GetService("ReplicatedStorage")
+local remote=ReplicatedStorage:WaitForChild("SemoRemote")
+local player=game:GetService("Players").LocalPlayer
+
+local gui=Instance.new("ScreenGui")
+gui.Name="SemoHUD"; gui.ResetOnSpawn=false; gui.Parent=player:WaitForChild("PlayerGui")
+
+-- 카운트다운(상단 중앙)
+local timer=Instance.new("TextLabel")
+timer.Size=UDim2.new(0,220,0,44); timer.Position=UDim2.new(0.5,-110,0,12)
+timer.BackgroundColor3=Color3.fromRGB(14,17,22); timer.BackgroundTransparency=0.2
+timer.TextColor3=Color3.fromRGB(230,237,243); timer.Font=Enum.Font.GothamBold; timer.TextScaled=true
+timer.Text="5:00"; timer.Parent=gui
+local tc=Instance.new("UICorner"); tc.CornerRadius=UDim.new(0,10); tc.Parent=timer
+
+-- 완주자 명단(우측)
+local panel=Instance.new("Frame")
+panel.Size=UDim2.new(0,200,0,280); panel.Position=UDim2.new(1,-212,0,70)
+panel.BackgroundColor3=Color3.fromRGB(14,17,22); panel.BackgroundTransparency=0.2; panel.Parent=gui
+local pc=Instance.new("UICorner"); pc.CornerRadius=UDim.new(0,10); pc.Parent=panel
+local title=Instance.new("TextLabel")
+title.Size=UDim2.new(1,0,0,30); title.BackgroundTransparency=1; title.TextColor3=Color3.fromRGB(74,222,128)
+title.Font=Enum.Font.GothamBold; title.TextSize=16; title.Text="🏁 완주자"; title.Parent=panel
+local list=Instance.new("ScrollingFrame")
+list.Size=UDim2.new(1,-8,1,-36); list.Position=UDim2.new(0,4,0,32); list.BackgroundTransparency=1
+list.ScrollBarThickness=4; list.CanvasSize=UDim2.new(0,0,0,0); list.AutomaticCanvasSize=Enum.AutomaticSize.Y; list.Parent=panel
+local layout=Instance.new("UIListLayout"); layout.Padding=UDim.new(0,3); layout.Parent=list
+
+local count=0
+local function fmt(n) return string.format("%d:%02d", math.floor(n/60), n%60) end
+remote.OnClientEvent:Connect(function(kind, val)
+	if kind=="time" then
+		timer.Text=fmt(val)
+		timer.TextColor3=(val<=30) and Color3.fromRGB(239,68,68) or Color3.fromRGB(230,237,243)
+	elseif kind=="reset" then
+		count=0
+		for _,c in ipairs(list:GetChildren()) do if c:IsA("TextLabel") then c:Destroy() end end
+	elseif kind=="roundend" then
+		timer.Text="라운드 종료!"
+	elseif kind=="finisher" then
+		count+=1
+		local lbl=Instance.new("TextLabel")
+		lbl.Size=UDim2.new(1,0,0,24); lbl.BackgroundTransparency=1; lbl.TextColor3=Color3.fromRGB(230,237,243)
+		lbl.Font=Enum.Font.Gotham; lbl.TextSize=14; lbl.TextXAlignment=Enum.TextXAlignment.Left
+		lbl.Text=count..". "..val; lbl.LayoutOrder=count; lbl.Parent=list
 	end
 end)
 `;
