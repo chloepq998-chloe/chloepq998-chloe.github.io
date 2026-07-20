@@ -176,6 +176,7 @@
   <button data-role="admin" onclick="addToLibrary()">📚 보관함에 추가</button>
   <button data-role="admin" onclick="batchExport()">📦 전체 내보내기</button>
   <button data-role="admin" onclick="assemblyCode()">🔩 조립 스크립트</button>
+  <button data-role="admin" onclick="roundSystemCode()">🎲 라운드 시스템</button>
   <button onclick="view3d()">🧊 3D 미리보기</button>
   <button onclick="sideView()">📐 측면 높이</button>
   <button data-role="admin" onclick="octagonPreview()">⬡ 팔각형 미리보기</button>
@@ -539,7 +540,7 @@ function mirror(){
 function clearAll(){ snapshot(); for(const k in grid)delete grid[k]; selectedCell=null; selection=new Set(); renderCells(); renderParams(); updateStat(); }
 
 // ---- history (undo/redo) + save/load ----
-const VERSION='1.8';
+const VERSION='1.9';
 let history=[], future=[], editing=false;
 function gv(id){ return document.getElementById(id).value; }
 function curGlobals(){ return {secNum:gv('secNum'),len:gv('len'),hgt:gv('hgt'),zig:gv('zig'),name:gv('secName'),diff:gv('secDiff')}; }
@@ -589,6 +590,7 @@ function outMode(kind){
     luau:['생성된 Luau','— Builder + PlatformController'],
     json:['세모 저장 데이터 (JSON)','— 복사해서 보관 · 불러오려면 이 칸에 붙여넣고 “불러오기”'],
     assembly:['조립 스크립트 (OctagonAssembler)','— ServerScriptService 에 Script 로'],
+    round:['라운드 시스템 (풀 빌더 + GameServer)','— ①풀 빌더=커맨드바 1회, ②GameServer=ServerScriptService Script'],
   }[kind]||['생성된 Luau','— Builder + PlatformController'];
   document.getElementById('outTitle').textContent=T[0];
   document.getElementById('outSub').textContent=T[1];
@@ -730,6 +732,21 @@ function assemblyCode(){
   s+=`print(("팔각형 조립 완료 — 세모 %d개 배치"):format(math.min(#sections,8)))\n`;
   document.getElementById('out').value=s;
   outMode('assembly'); document.getElementById('octagon').classList.add('hidden');
+  document.getElementById('bottom').classList.remove('hidden');
+}
+// 라운드 시스템: 전체 세모를 풀(ServerStorage)에 넣고, 매 라운드 무작위 8개를 뽑아 팔각형 조립+작동
+function roundSystemCode(){
+  if(!library.length){ alert('보관함에 세모를 먼저 모으세요 (전체 후보를 다 넣으면 풀이 됩니다).'); return; }
+  const RING=Math.round(parseFloat(gv('len'))||120);
+  let b=`--[[ ===== 1) 풀 빌더 (커맨드바 F9 에 붙여넣고 한 번 실행) =====\n  보관함의 전체 세모를 ServerStorage.SectionPool 에 보관.\n  라운드마다 여기서 무작위로 뽑아 씁니다. 후보를 늘리려면 보관함에 더 넣고 다시 실행. ]]\n`;
+  b+=`local ServerStorage=game:GetService("ServerStorage")\n`;
+  b+=`local pool=ServerStorage:FindFirstChild("SectionPool") or Instance.new("Folder")\npool.Name="SectionPool" pool.Parent=ServerStorage\npool:ClearAllChildren()\n`;
+  b+=MKP_DEF;
+  library.forEach((e,i)=>{ const r=sectionLua(e.st,'pool'); b+=`do -- [${i+1}] ${r.name} (${e.diff})\n${r.lua}end\n`; });
+  b+=`print("풀 생성 완료 — 세모 ${library.length}개 (ServerStorage.SectionPool)")\n`;
+  const gs=GAMESERVER.split('__RING__').join(String(RING));
+  document.getElementById('out').value=b+'\n\n'+gs;
+  outMode('round'); document.getElementById('octagon').classList.add('hidden');
   document.getElementById('bottom').classList.remove('hidden');
 }
 function octagonPreview(){
@@ -931,6 +948,204 @@ for _,p in ipairs(all) do
 \t\tend
 \tend
 end
+`;
+
+const GAMESERVER=`--[[ ===== 2) GameServer: 라운드 매니저 + 컨트롤러 =====
+  ServerScriptService 에 Script 로 넣으세요. (풀 빌더를 먼저 커맨드바에 실행해 둘 것)
+  매 라운드 풀에서 무작위로 뽑아 팔각형 조립 + 장치 작동. 아래 "설정"만 바꾸면 됨. ]]
+local RS=game:GetService("RunService")
+local Players=game:GetService("Players")
+local ServerStorage=game:GetService("ServerStorage")
+
+-- ===== 설정 =====
+local RING=__RING__            -- 입구 링 반지름(스터드)
+local ROUND_TIME=300           -- 라운드 길이(초). 5분=300
+local SLOTS=8                  -- 한 라운드에 배치할 세모 수
+local USE_RATIO=true           -- true=난이도 비율대로 / false=완전 무작위
+local RATIO={["쉬움"]=2, ["보통"]=4, ["지옥"]=2}   -- 합=SLOTS 권장
+
+local pool=ServerStorage:WaitForChild("SectionPool")
+
+local movers,rotplats,spinners,pendulums,walls,pistons,spikes,beams,lavas
+local origin,lethal
+local rayp=RaycastParams.new(); rayp.FilterType=Enum.RaycastFilterType.Exclude
+
+local function humOf(h) return h.Parent and h.Parent:FindFirstChildOfClass("Humanoid") end
+local function entranceOf(part)
+	local m=part:FindFirstAncestorWhichIsA("Model")
+	while m do
+		for _,d in ipairs(m:GetChildren()) do
+			if d:IsA("BasePart") and d:GetAttribute("Role")=="Entrance" then return d end
+		end
+		m=m.Parent and m.Parent:FindFirstAncestorWhichIsA("Model")
+	end
+end
+local function respawn(h,ent)
+	if not ent then return end
+	local hrp=h.Parent and h.Parent:FindFirstChild("HumanoidRootPart")
+	if hrp then hrp.CFrame=ent.CFrame+Vector3.new(0,5,0) end
+end
+local function knock(h,part,f)
+	local root=h.Parent and h.Parent:FindFirstChild("HumanoidRootPart")
+	if root then root.AssemblyLinearVelocity=(root.Position-part.Position).Unit*f end
+end
+local function setupVanish(p)
+	local mode=p:GetAttribute("Mode") or "지연"
+	if mode=="주기" then
+		task.spawn(function()
+			while p.Parent do
+				task.wait(p:GetAttribute("Cycle") or 2)
+				local warn=p:GetAttribute("WarnTime") or 1; local blink=p:GetAttribute("BlinkPeriod") or 0.3
+				local t0=os.clock()
+				while os.clock()-t0<warn and p.Parent do p.Transparency=(p.Transparency>0.5) and 0 or 0.6; task.wait(blink) end
+				if p.Parent then p.Transparency=1 p.CanCollide=false; task.wait(p:GetAttribute("RespawnTime") or 3) end
+				if p.Parent then p.Transparency=0 p.CanCollide=true end
+			end
+		end)
+	else
+		local busy=false
+		p.Touched:Connect(function(hit)
+			if busy or not humOf(hit) then return end
+			busy=true
+			if mode=="복귀" then
+				p.CanCollide=false p.Transparency=0.6
+				task.wait(p:GetAttribute("RespawnTime") or 3)
+				if p.Parent then p.CanCollide=true p.Transparency=0 end
+			else
+				local warn=p:GetAttribute("WarnTime") or 1; local blink=p:GetAttribute("BlinkPeriod") or 0.3
+				local t0=os.clock()
+				while os.clock()-t0<warn and p.Parent do p.Transparency=(p.Transparency>0.5) and 0 or 0.6; task.wait(blink) end
+				task.wait(p:GetAttribute("DisappearTime") or 0.5)
+				if p.Parent then p.Transparency=1 p.CanCollide=false; task.wait(p:GetAttribute("RespawnTime") or 3) end
+				if p.Parent then p.Transparency=0 p.CanCollide=true end
+			end
+			busy=false
+		end)
+	end
+end
+
+-- 라운드마다 현재 발판을 다시 스캔·연결 (이전 라운드 파트는 Destroy 로 자동 정리됨)
+local function rebuild()
+	movers,rotplats,spinners,pendulums,walls,pistons,spikes,beams,lavas={},{},{},{},{},{},{},{},{}
+	origin,lethal={},{}
+	local sec=workspace:FindFirstChild("Sections"); if not sec then return end
+	for _,p in ipairs(sec:GetDescendants()) do
+		if p:IsA("BasePart") and p:GetAttribute("Kind") then
+			local k=p:GetAttribute("Kind"); origin[p]=p.CFrame
+			if k=="moving" then table.insert(movers,p)
+			elseif k=="rotplat" then table.insert(rotplats,p)
+			elseif k=="spinner" then table.insert(spinners,p)
+			elseif k=="pendulum" then table.insert(pendulums,p)
+			elseif k=="pushwall" then table.insert(walls,p)
+			elseif k=="intpush" then table.insert(pistons,p)
+			elseif k=="spike" then table.insert(spikes,p)
+			elseif k=="laser" then table.insert(beams,p)
+			elseif k=="lava" then table.insert(lavas,p)
+			elseif k=="vanish" then setupVanish(p) end
+		end
+	end
+	for _,list in ipairs({spinners,pendulums,walls,pistons}) do
+		for _,p in ipairs(list) do
+			p.Touched:Connect(function(hit) if humOf(hit) then knock(hit,p,p:GetAttribute("PushForce") or 80) end end)
+		end
+	end
+	for _,p in ipairs(lavas) do local e=entranceOf(p); p.Touched:Connect(function(hit) if humOf(hit) then respawn(hit,e) end end) end
+	for _,p in ipairs(spikes) do local e=entranceOf(p); p.Touched:Connect(function(hit) if lethal[p] and humOf(hit) then respawn(hit,e) end end) end
+	for _,p in ipairs(beams) do local e=entranceOf(p); p.Touched:Connect(function(hit) if lethal[p] and humOf(hit) then respawn(hit,e) end end) end
+end
+
+RS.Heartbeat:Connect(function()
+	if not movers then return end
+	local t=os.clock(); local dcf={}
+	for _,p in ipairs(movers) do if p.Parent then
+		local o=origin[p]
+		local off=math.sin(t*(p:GetAttribute("Speed") or 2)+math.rad(p:GetAttribute("Phase") or 0))*(p:GetAttribute("Range") or 6)
+		local ax=p:GetAttribute("Axis") or "X"
+		local v=(ax=="Y" and Vector3.new(0,off,0)) or (ax=="Z" and Vector3.new(0,0,off)) or Vector3.new(off,0,0)
+		local target=o+v; dcf[p]=target*p.CFrame:Inverse(); p.CFrame=target
+	end end
+	for _,p in ipairs(rotplats) do if p.Parent then
+		local o=origin[p]; local target=o*CFrame.Angles(0,t*(p:GetAttribute("Speed") or 2)+math.rad(p:GetAttribute("Phase") or 0),0)
+		dcf[p]=target*p.CFrame:Inverse(); p.CFrame=target
+	end end
+	for _,p in ipairs(spinners) do if p.Parent then
+		local o=origin[p]; local L=p:GetAttribute("Length") or 6
+		p.CFrame=CFrame.new(o.Position)*CFrame.Angles(0,t*(p:GetAttribute("Speed") or 3),0)*CFrame.new(L/2,0,0)
+	end end
+	for _,p in ipairs(pendulums) do if p.Parent then
+		local o=origin[p]; local L=p:GetAttribute("Length") or 6
+		p.CFrame=CFrame.new(o.Position)*CFrame.Angles(0,0,math.sin(t*(p:GetAttribute("Speed") or 3))*math.rad(60))*CFrame.new(0,-L/2,0)
+	end end
+	for _,p in ipairs(walls) do if p.Parent then
+		local o=origin[p]; local off=math.sin(t*(p:GetAttribute("Speed") or 3)+math.rad(p:GetAttribute("Phase") or 0))*(p:GetAttribute("Range") or 6)
+		p.CFrame=o+Vector3.new(off,0,0)
+	end end
+	for _,p in ipairs(pistons) do if p.Parent then
+		local o=origin[p]; local cyc=p:GetAttribute("Cycle") or 2; local ph=(t%cyc)/cyc
+		local e=(ph<0.3 and ph/0.3) or (ph<0.5 and 1-(ph-0.3)/0.2) or 0
+		p.CFrame=o+Vector3.new(e*(p:GetAttribute("Range") or 6),0,0)
+	end end
+	for _,p in ipairs(spikes) do if p.Parent then
+		local o=origin[p]; local cyc=p:GetAttribute("Cycle") or 2; local warn=math.min(p:GetAttribute("Warn") or 1,cyc*0.4)
+		local ph=(t%cyc)/cyc; local up=ph>=(0.5+warn/cyc); lethal[p]=up
+		p.Position=p.Position:Lerp(Vector3.new(o.Position.X,o.Position.Y+(up and 2.8 or 0),o.Position.Z),0.35)
+	end end
+	for _,p in ipairs(beams) do if p.Parent then
+		local cyc=p:GetAttribute("Cycle") or 2; local warn=math.min(p:GetAttribute("Warn") or 1,cyc*0.4); local ph=(t%cyc)/cyc
+		if ph<0.5 then p.Transparency=0.85; lethal[p]=false
+		elseif ph<0.5+warn/cyc then p.Transparency=(math.floor(t*10)%2==0) and 0.3 or 0.8; lethal[p]=false
+		else p.Transparency=0; lethal[p]=true end
+	end end
+	for _,plr in ipairs(Players:GetPlayers()) do
+		local ch=plr.Character; local hrp=ch and ch:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			rayp.FilterDescendantsInstances={ch}
+			local res=workspace:Raycast(hrp.Position,Vector3.new(0,-8,0),rayp)
+			if res and dcf[res.Instance] then hrp.CFrame=dcf[res.Instance]*hrp.CFrame end
+		end
+	end
+end)
+
+-- ===== 추첨 =====
+local function shuffle(t) for i=#t,2,-1 do local j=math.random(i); t[i],t[j]=t[j],t[i] end return t end
+local function pick()
+	local all=pool:GetChildren()
+	if not USE_RATIO then shuffle(all); local c={}; for i=1,math.min(SLOTS,#all) do c[i]=all[i] end; return c end
+	local bucket={}
+	for _,m in ipairs(all) do local d=m:GetAttribute("Difficulty") or "보통"; bucket[d]=bucket[d] or {}; table.insert(bucket[d],m) end
+	local chosen={}
+	for diff,n in pairs(RATIO) do local b=bucket[diff] or {}; shuffle(b); for i=1,math.min(n,#b) do table.insert(chosen,b[i]) end end
+	if #chosen<SLOTS then shuffle(all); for _,m in ipairs(all) do
+		local dup=false; for _,c in ipairs(chosen) do if c==m then dup=true break end end
+		if not dup then table.insert(chosen,m); if #chosen>=SLOTS then break end end
+	end end
+	return chosen
+end
+local function assemble(chosen)
+	local live=workspace:FindFirstChild("Sections"); if live then live:Destroy() end
+	local folder=Instance.new("Folder"); folder.Name="Sections"; folder.Parent=workspace
+	for i,src in ipairs(chosen) do
+		local m=src:Clone()
+		local a=math.rad((i-1)*45)
+		local pos=Vector3.new(math.cos(a),0,math.sin(a))*RING
+		m:PivotTo(CFrame.lookAt(pos, Vector3.new(0,pos.Y,0)))
+		m.Parent=folder
+	end
+end
+
+-- ===== 라운드 루프 =====
+task.spawn(function()
+	while true do
+		local chosen=pick()
+		if #chosen==0 then warn("SectionPool 이 비어 있음 — 풀 빌더를 먼저 실행하세요"); task.wait(5)
+		else
+			assemble(chosen); rebuild()
+			print(("라운드 시작 — 세모 %d개"):format(#chosen))
+			-- TODO: 여기에 스폰/카운트다운/완주 처리 추가 (4단계 게임루프 참고)
+			task.wait(ROUND_TIME)
+		end
+	end
+end)
 `;
 
 // ---- 3D 미리보기 (의존성 0, Canvas 2D 손수 투영 + 시간축 애니) ----
