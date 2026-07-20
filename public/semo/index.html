@@ -540,7 +540,7 @@ function mirror(){
 function clearAll(){ snapshot(); for(const k in grid)delete grid[k]; selectedCell=null; selection=new Set(); renderCells(); renderParams(); updateStat(); }
 
 // ---- history (undo/redo) + save/load ----
-const VERSION='2.0';
+const VERSION='2.1';
 let history=[], future=[], editing=false;
 function gv(id){ return document.getElementById(id).value; }
 function curGlobals(){ return {secNum:gv('secNum'),len:gv('len'),hgt:gv('hgt'),zig:gv('zig'),name:gv('secName'),diff:gv('secDiff')}; }
@@ -891,7 +891,7 @@ RS.Heartbeat:Connect(function()
 \t\tif hrp then
 \t\t\trayp.FilterDescendantsInstances={ch}
 \t\t\tlocal res=workspace:Raycast(hrp.Position,Vector3.new(0,-8,0),rayp)
-\t\t\tif res and dcf[res.Instance] then hrp.CFrame=dcf[res.Instance]*hrp.CFrame end
+\t\t\tif res and dcf[res.Instance] then local D=dcf[res.Instance]; hrp.CFrame=hrp.CFrame+((D*CFrame.new(hrp.Position)).Position-hrp.Position) end
 \t\tend
 \tend
 end)
@@ -1103,7 +1103,7 @@ RS.Heartbeat:Connect(function()
 		if hrp then
 			rayp.FilterDescendantsInstances={ch}
 			local res=workspace:Raycast(hrp.Position,Vector3.new(0,-8,0),rayp)
-			if res and dcf[res.Instance] then hrp.CFrame=dcf[res.Instance]*hrp.CFrame end
+			if res and dcf[res.Instance] then local D=dcf[res.Instance]; hrp.CFrame=hrp.CFrame+((D*CFrame.new(hrp.Position)).Position-hrp.Position) end
 		end
 	end
 end)
@@ -1143,18 +1143,19 @@ local KILL_Y=-25
 local finished={}   -- 이번 라운드 완주자 [player]=true
 
 -- 전망대(완주자 도착지) + 완주 감지 존 (한 번만 생성)
+-- 출구들은 중앙 y=HEIGHT 에서 만남. 전망대=그 높이의 실제 착지 발판, 완주존=그 위 얇게.
 local deck=Instance.new("Part")
-deck.Name="전망대"; deck.Anchored=true; deck.Size=Vector3.new(24,1,24)
-deck.Position=Vector3.new(0,HEIGHT+8,0); deck.Color=Color3.fromRGB(250,220,90); deck.Parent=workspace
+deck.Name="전망대"; deck.Anchored=true; deck.Size=Vector3.new(30,2,30)
+deck.Position=Vector3.new(0,HEIGHT,0); deck.Color=Color3.fromRGB(250,220,90); deck.Parent=workspace
 local finishZone=Instance.new("Part")
 finishZone.Name="FinishZone"; finishZone.Anchored=true; finishZone.CanCollide=false; finishZone.Transparency=1
-finishZone.Size=Vector3.new(26,12,26); finishZone.Position=Vector3.new(0,HEIGHT+5,0); finishZone.Parent=workspace
+finishZone.Size=Vector3.new(30,8,30); finishZone.Position=Vector3.new(0,HEIGHT+4,0); finishZone.Parent=workspace
 finishZone.Touched:Connect(function(hit)
 	local plr=Players:GetPlayerFromCharacter(hit.Parent)
 	if plr and not finished[plr] then
 		finished[plr]=true
 		local hrp=hit.Parent:FindFirstChild("HumanoidRootPart")
-		if hrp then hrp.CFrame=deck.CFrame+Vector3.new(0,4,0) end
+		if hrp then hrp.CFrame=deck.CFrame+Vector3.new(math.random(-8,8),4,math.random(-8,8)) end
 		remote:FireAllClients("finisher", plr.Name)
 	end
 end)
