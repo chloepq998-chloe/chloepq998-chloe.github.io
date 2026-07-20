@@ -173,10 +173,10 @@
 <div class="barwrap">
   <button class="submit" data-role="participant" onclick="submit()">🏆 제출하기</button>
   <button class="primary" data-role="admin" onclick="loadSubmissions()">📥 제출 목록</button>
-  <button data-role="builder" onclick="genCode()">⚙ Luau 코드 생성</button>
+  <button class="primary" data-role="admin" onclick="genCode()">⚙ Luau 코드 생성</button>
   <button data-role="builder" onclick="addToLibrary()">📚 보관함에 추가</button>
   <button data-role="builder" onclick="batchExport()">📦 전체 내보내기</button>
-  <button data-role="builder" onclick="assemblyCode()">🔩 조립 스크립트</button>
+  <button data-role="admin" onclick="assemblyCode()">🔩 조립 스크립트</button>
   <button onclick="view3d()">🧊 3D 미리보기</button>
   <button onclick="sideView()">📐 측면 높이</button>
   <button data-role="builder" onclick="octagonPreview()">⬡ 팔각형 미리보기</button>
@@ -540,7 +540,7 @@ function mirror(){
 function clearAll(){ snapshot(); for(const k in grid)delete grid[k]; selectedCell=null; selection=new Set(); renderCells(); renderParams(); updateStat(); }
 
 // ---- history (undo/redo) + save/load ----
-const VERSION='1.6';
+const VERSION='1.7';
 let history=[], future=[], editing=false;
 function gv(id){ return document.getElementById(id).value; }
 function curGlobals(){ return {secNum:gv('secNum'),len:gv('len'),hgt:gv('hgt'),zig:gv('zig'),name:gv('secName'),diff:gv('secDiff')}; }
