@@ -1,76 +1,99 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>세모 섹션 에디터 — Roblox Obby</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0e1116; --panel:#161b22; --panel2:#1c232d; --border:#2a3340;
-    --text:#e6edf3; --muted:#8b98a6; --accent:#4ea1ff;
+    --bg:#0f1420; --panel:#161d2b; --panel2:#1f2838; --border:#2b3648;
+    --text:#eaf0f8; --muted:#8e9bb2;
+    --accent:#5b8cff; --accent-ink:#06132b; --accent2:#ff8a5c;
+    --viewport:#0b0f18; --cell:#222d40; --cell-border:#313e55; --sel:#eaf0f8;
+    --shadow:0 2px 8px rgba(0,0,0,.35); --shadow-lg:0 10px 26px rgba(0,0,0,.42); --rbtn:11px;
     --gray:#8a8f98; --blue:#3b82f6; --orange:#f59e0b; --red:#ef4444; --purple:#a855f7;
   }
+  :root[data-theme="light"]{
+    --bg:#eef2fa; --panel:#ffffff; --panel2:#eef2fb; --border:#dbe2ef;
+    --text:#1b2536; --muted:#5c6a86;
+    --accent:#3b6cf6; --accent-ink:#ffffff; --accent2:#ff7a45;
+    --viewport:#e2e8f5; --cell:#ffffff; --cell-border:#cbd6ea; --sel:#1b2536;
+    --shadow:0 2px 8px rgba(30,50,90,.10); --shadow-lg:0 10px 28px rgba(30,50,90,.16);
+  }
+  @media (prefers-color-scheme: light){ :root:not([data-theme]){
+    --bg:#eef2fa; --panel:#ffffff; --panel2:#eef2fb; --border:#dbe2ef;
+    --text:#1b2536; --muted:#5c6a86;
+    --accent:#3b6cf6; --accent-ink:#ffffff; --accent2:#ff7a45;
+    --viewport:#e2e8f5; --cell:#ffffff; --cell-border:#cbd6ea; --sel:#1b2536;
+    --shadow:0 2px 8px rgba(30,50,90,.10); --shadow-lg:0 10px 28px rgba(30,50,90,.16);
+  }}
   *{box-sizing:border-box}
   body{
     margin:0; background:var(--bg); color:var(--text);
-    font:13px/1.4 system-ui,"Segoe UI",Roboto,sans-serif;
+    font:13px/1.45 system-ui,"Segoe UI",Roboto,"Apple SD Gothic Neo",sans-serif;
     height:100vh; display:flex; flex-direction:column; overflow:hidden;
-    -webkit-user-select:none; user-select:none;
+    -webkit-user-select:none; user-select:none; transition:background .25s,color .25s;
   }
-  h1{font-size:14px;margin:0;font-weight:600;letter-spacing:.3px}
+  h1{font-family:"Jua",system-ui,sans-serif;font-size:19px;margin:0;font-weight:400;letter-spacing:.2px}
+  .pal-title,.grid-head,.p-kind,.oct-head b{font-family:"Jua",system-ui,sans-serif}
   .muted{color:var(--muted)}
   button{
     background:var(--panel2); color:var(--text); border:1px solid var(--border);
-    border-radius:6px; padding:6px 12px; cursor:pointer; font:inherit;
+    border-radius:var(--rbtn); padding:7px 13px; cursor:pointer; font:inherit; font-weight:600;
+    transition:transform .08s, box-shadow .12s, background .12s, border-color .12s;
   }
-  button:hover{border-color:var(--accent)}
-  button:disabled{opacity:.4;cursor:not-allowed}
-  button.primary{background:var(--accent);border-color:var(--accent);color:#04121f;font-weight:600}
-  button.submit{background:#22c55e;border-color:#22c55e;color:#052e16;font-weight:700}
-  button.submit:hover{background:#16a34a}
-  #contestBanner{padding:9px 16px;background:linear-gradient(90deg,#1a2b1f,#161b22);border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text)}
-  #contestBanner b{color:#4ade80}
-  #modeBadge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:var(--panel2);border:1px solid var(--border)}
-  button.mini{padding:4px 8px;font-size:12px}
+  button:hover{border-color:var(--accent); transform:translateY(-1px); box-shadow:var(--shadow)}
+  button:active{transform:translateY(0)}
+  button:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+  button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  button.submit{background:linear-gradient(180deg,#34d76b,#22c55e);border:none;color:#04220f;font-weight:800;font-size:13.5px;box-shadow:0 3px 0 #16a34a}
+  button.submit:hover{filter:brightness(1.05);box-shadow:0 4px 0 #16a34a,var(--shadow);transform:translateY(-1px)}
+  button.submit:active{box-shadow:0 1px 0 #16a34a;transform:translateY(2px)}
+  #modeBadge{font-family:"Jua",system-ui;font-size:12px;padding:3px 12px;border-radius:20px;background:var(--accent);color:var(--accent-ink)}
+  button.mini{padding:4px 9px;font-size:12px}
   input[type=range]{width:100%;accent-color:var(--accent)}
   input[type=range]:disabled{opacity:.4}
-  select{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:4px}
+  select{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:5px 6px;font-weight:600}
+  @media (prefers-reduced-motion: reduce){ *{transition:none!important} }
 
   #top{
-    display:flex; align-items:center; gap:18px; padding:10px 16px;
-    background:var(--panel); border-bottom:1px solid var(--border); flex-wrap:wrap;
+    display:flex; align-items:center; gap:15px; padding:11px 18px;
+    background:var(--panel); border-bottom:1px solid var(--border); flex-wrap:wrap; box-shadow:var(--shadow); z-index:5;
   }
   #top .g{display:flex;align-items:center;gap:6px}
-  #top .g input{width:64px;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:4px 6px}
+  #top .g input{width:64px;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:5px 7px}
+  #themeBtn{padding:5px 10px;font-size:15px;line-height:1}
 
   #main{flex:1;display:flex;min-height:0}
   .col{overflow:auto}
-  #left{width:212px;background:var(--panel);border-right:1px solid var(--border);padding:12px}
-  #center{flex:1;display:flex;flex-direction:column;align-items:center;padding:16px;background:radial-gradient(120% 90% at 50% 0%,#141b24,#0e1116)}
-  #right{width:288px;background:var(--panel);border-left:1px solid var(--border);padding:14px}
+  #left{width:216px;background:var(--panel);border-right:1px solid var(--border);padding:14px}
+  #center{flex:1;display:flex;flex-direction:column;align-items:center;padding:18px;background:var(--bg);background:radial-gradient(130% 90% at 50% -10%,color-mix(in srgb,var(--accent) 11%,var(--bg)),var(--bg))}
+  #right{width:292px;background:var(--panel);border-left:1px solid var(--border);padding:16px}
 
-  .pal-title{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:2px 0 8px}
-  .pal{display:flex;flex-direction:column;gap:5px}
-  .pal button{display:flex;align-items:center;gap:8px;justify-content:flex-start;text-align:left;padding:7px 9px;width:100%}
-  .pal button.sel{outline:2px solid var(--accent);border-color:var(--accent)}
-  .swatch{width:16px;height:16px;border-radius:4px;flex:none;display:grid;place-items:center;font-size:11px;color:#0008;font-weight:700}
+  .pal-title{font-size:12.5px;letter-spacing:.2px;color:var(--muted);margin:2px 0 9px}
+  .pal{display:flex;flex-direction:column;gap:6px}
+  .pal button{display:flex;align-items:center;gap:9px;justify-content:flex-start;text-align:left;padding:8px 10px;width:100%}
+  .pal button.sel{outline:2px solid var(--accent);border-color:var(--accent);background:var(--panel2);background:color-mix(in srgb,var(--accent) 15%,var(--panel2))}
+  .swatch{width:18px;height:18px;border-radius:6px;flex:none;display:grid;place-items:center;font-size:11px;color:#0008;font-weight:800;box-shadow:inset 0 -2px 0 rgba(0,0,0,.16)}
   .preset-row{display:flex;gap:4px}
   .preset-row button.p{flex:1;justify-content:flex-start}
-  .preset-row button.del{flex:none;padding:4px 7px;color:var(--muted)}
+  .preset-row button.del{flex:none;padding:5px 8px;color:var(--muted)}
 
-  .grid-head{color:var(--muted);font-size:11px;margin:2px 0 8px;text-align:center}
-  #grid{display:flex;flex-direction:column;gap:4px;background:#0b0e13;padding:10px 10px 10px 4px;border:1px solid var(--border);border-radius:8px}
+  .grid-head{color:var(--muted);font-size:12px;margin:2px 0 9px;text-align:center}
+  #grid{display:flex;flex-direction:column;gap:4px;background:var(--viewport);padding:12px 12px 12px 6px;border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-lg)}
   .gridrow{position:relative;display:flex;gap:4px;justify-content:center;align-items:center;width:250px;margin:0 auto}
   .rlabel{position:absolute;left:-2px;width:20px;text-align:right;color:var(--muted);font-size:10px;pointer-events:none}
-  .void{background:repeating-linear-gradient(45deg,#161c24,#161c24 4px,#12171e 4px,#12171e 8px);border-radius:5px;height:36px;flex:none;opacity:.6}
+  .void{background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--muted) 14%,transparent),color-mix(in srgb,var(--muted) 14%,transparent) 4px,transparent 4px,transparent 8px);border-radius:6px;height:36px;flex:none;opacity:.65}
   .cell{
-    width:42px;height:36px;border-radius:5px;background:#212a35;border:1px solid #2c3744;
+    width:42px;height:36px;border-radius:7px;background:var(--cell);border:1px solid var(--cell-border);
     cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    color:#0009;position:relative;flex:none;
+    color:#0009;position:relative;flex:none;transition:transform .07s, box-shadow .1s;
   }
-  .cell:hover{border-color:var(--accent)}
-  .cell .glyph{font-size:12px;font-weight:700;line-height:1}
+  .cell:hover{border-color:var(--accent);transform:scale(1.08);box-shadow:var(--shadow);z-index:2}
+  .cell .glyph{font-size:12px;font-weight:800;line-height:1}
   .cell .badge{font-size:8.5px;line-height:1.1;margin-top:1px;font-variant-numeric:tabular-nums;color:#000b}
   .cell.selected{outline:2px solid var(--accent);outline-offset:-2px}
-  .cell.primary{outline:2px solid #fff;outline-offset:-2px}
-  .cell.warn::after{content:"";position:absolute;inset:0;border-radius:5px;box-shadow:inset 0 0 0 2px #fbbf24;pointer-events:none}
+  .cell.primary{outline:2px solid var(--sel);outline-offset:-2px}
+  .cell.warn::after{content:"";position:absolute;inset:0;border-radius:7px;box-shadow:inset 0 0 0 2px #fbbf24;pointer-events:none}
 
   #analysis{margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
   .an-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin:6px 0}
@@ -90,7 +113,7 @@
   .empty{color:var(--muted);margin-top:20px;text-align:center;line-height:1.7}
   .divider{height:1px;background:var(--border);margin:12px 0}
 
-  .barwrap{padding:10px 16px;background:var(--panel);border-top:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap}
+  .barwrap{padding:11px 16px;background:var(--panel);border-top:1px solid var(--border);display:flex;gap:9px;flex-wrap:wrap;box-shadow:0 -3px 10px rgba(0,0,0,.10)}
   #bottom{background:var(--panel);border-top:1px solid var(--border);padding:12px 16px;max-height:44vh;display:flex;flex-direction:column;gap:8px}
   #bottom.hidden{display:none}
   .out-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -137,6 +160,7 @@
   <div class="g"><span class="muted">난이도</span><select id="secDiff"><option>쉬움</option><option selected>보통</option><option>지옥</option></select></div>
   <div class="g muted" style="margin-left:auto" id="stat"></div>
   <div class="g" id="modeBadge"></div>
+  <button id="themeBtn" onclick="toggleTheme()" title="라이트/다크 전환">☀️</button>
   <div class="g muted" id="ver"></div>
 </div>
 
@@ -540,7 +564,7 @@ function mirror(){
 function clearAll(){ snapshot(); for(const k in grid)delete grid[k]; selectedCell=null; selection=new Set(); renderCells(); renderParams(); updateStat(); }
 
 // ---- history (undo/redo) + save/load ----
-const VERSION='2.2';
+const VERSION='2.3';
 let history=[], future=[], editing=false;
 function gv(id){ return document.getElementById(id).value; }
 function curGlobals(){ return {secNum:gv('secNum'),len:gv('len'),hgt:gv('hgt'),zig:gv('zig'),name:gv('secName'),diff:gv('secDiff')}; }
@@ -1373,10 +1397,11 @@ function svPoly(){ let s=`${svpx(0)},${svpy(0)}`; for(let r=1;r<=ROWS;r++) s+=` 
 function renderSideView(){
   const el=document.getElementById('sideview'); const height=parseFloat(gv('hgt'))||100;
   const rowsWith=new Set(Object.keys(grid).map(k=>+k.split('-')[0]));
+  const cs=getComputedStyle(document.documentElement), BD=cs.getPropertyValue('--border')||'#2a3340', MU=cs.getPropertyValue('--muted')||'#8b98a6', AC=cs.getPropertyValue('--accent')||'#4ea1ff';
   let svg=`<svg viewBox="0 0 ${SV.W} ${SV.H}" width="${SV.W}" height="${SV.H}" id="svg-side" style="touch-action:none">`;
-  for(let i=0;i<=4;i++){ const y=svpy(i/4); svg+=`<line x1="${SV.pad}" y1="${y}" x2="${SV.W-SV.pad}" y2="${y}" stroke="#2a3340"/><text x="4" y="${y+3}" font-size="9" fill="#8b98a6">${Math.round(height*i/4)}</text>`; }
+  for(let i=0;i<=4;i++){ const y=svpy(i/4); svg+=`<line x1="${SV.pad}" y1="${y}" x2="${SV.W-SV.pad}" y2="${y}" stroke="${BD}"/><text x="4" y="${y+3}" font-size="9" fill="${MU}">${Math.round(height*i/4)}</text>`; }
   svg+=`<text x="${svpx(0)}" y="${SV.H-8}" font-size="9" fill="#78c878" text-anchor="middle">입구</text><text x="${svpx(21)}" y="${SV.H-8}" font-size="9" fill="#fadc5a" text-anchor="middle">출구</text>`;
-  svg+=`<polyline points="${svPoly()}" fill="none" stroke="#4ea1ff" stroke-width="2"/>`;
+  svg+=`<polyline points="${svPoly()}" fill="none" stroke="${AC}" stroke-width="2.5"/>`;
   svg+=`<circle cx="${svpx(0)}" cy="${svpy(0)}" r="5" fill="#78c878"/><circle cx="${svpx(21)}" cy="${svpy(1)}" r="5" fill="#fadc5a"/>`;
   for(let r=1;r<=ROWS;r++){ const has=rowsWith.has(r);
     svg+=`<circle class="hdot" data-r="${r}" cx="${svpx(r)}" cy="${svpy(hpVal(hprof,r))}" r="${has?6:4}" fill="${has?'#e6edf3':'#586170'}" stroke="#0b0e13" style="cursor:ns-resize"/>`; }
@@ -1472,7 +1497,12 @@ function renderSubmissions(){
   el.querySelectorAll('.sub-row button[data-i]').forEach(b=>b.onclick=()=>{ const r=subRows[+b.dataset.i]; if(r&&r.data){ snapshot(); applyState(r.data); el.classList.add('hidden'); } });
 }
 
+// ---- 라이트/다크 테마 ----
+function curTheme(){ const t=document.documentElement.dataset.theme; return t || (matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'); }
+function syncThemeBtn(){ const b=document.getElementById('themeBtn'); if(b)b.textContent=curTheme()==='dark'?'☀️':'🌙'; }
+function toggleTheme(){ document.documentElement.dataset.theme=(curTheme()==='dark'?'light':'dark'); syncThemeBtn(); if(typeof refresh3d==='function')refresh3d(); if(typeof refreshSide==='function')refreshSide(); }
+
 // init
 document.getElementById('ver').textContent='v'+VERSION;
-renderPalette(); renderLibrary(); buildGrid(); updateStat(); applyMode();
+renderPalette(); renderLibrary(); buildGrid(); updateStat(); applyMode(); syncThemeBtn();
 </script>
