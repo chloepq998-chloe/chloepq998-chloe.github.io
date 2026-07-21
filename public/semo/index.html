@@ -540,7 +540,7 @@ function mirror(){
 function clearAll(){ snapshot(); for(const k in grid)delete grid[k]; selectedCell=null; selection=new Set(); renderCells(); renderParams(); updateStat(); }
 
 // ---- history (undo/redo) + save/load ----
-const VERSION='2.1';
+const VERSION='2.2';
 let history=[], future=[], editing=false;
 function gv(id){ return document.getElementById(id).value; }
 function curGlobals(){ return {secNum:gv('secNum'),len:gv('len'),hgt:gv('hgt'),zig:gv('zig'),name:gv('secName'),diff:gv('secDiff')}; }
@@ -832,8 +832,8 @@ local function knock(hit,part,force)
 \tif root then root.AssemblyLinearVelocity=(root.Position-part.Position).Unit*force end
 end
 
--- Heartbeat: 캐시 배열만 순회하며 이동/회전/장치 애니메이션
-RS.Heartbeat:Connect(function()
+-- Stepped(물리 전): 발판을 물리 시뮬레이션 전에 움직여야 밟은 플레이어가 물리로 자연스럽게 실림(왕복·승강·회전)
+RS.Stepped:Connect(function()
 \tlocal t=os.clock()
 \tlocal dcf={}   -- part -> 이번 프레임 CFrame 델타(밟은 플레이어 캐리)
 
@@ -884,16 +884,7 @@ RS.Heartbeat:Connect(function()
 \t\telse p.Transparency=0; lethal[p]=true end
 \tend
 
-\t-- 밟은 플레이어 캐리: CFrame 델타 적용(위치+방향)
-\tfor _,plr in ipairs(Players:GetPlayers()) do
-\t\tlocal ch=plr.Character
-\t\tlocal hrp=ch and ch:FindFirstChild("HumanoidRootPart")
-\t\tif hrp then
-\t\t\trayp.FilterDescendantsInstances={ch}
-\t\t\tlocal res=workspace:Raycast(hrp.Position,Vector3.new(0,-8,0),rayp)
-\t\t\tif res and dcf[res.Instance] then local D=dcf[res.Instance]; hrp.CFrame=hrp.CFrame+((D*CFrame.new(hrp.Position)).Position-hrp.Position) end
-\t\tend
-\tend
+\t-- (수동 캐리 불필요: Stepped 로 움직여 물리가 밟은 플레이어를 자동으로 실어줌)
 end)
 
 -- 넉백 장치(빨강): 접촉 시 밀어냄
@@ -1056,7 +1047,7 @@ local function rebuild()
 	for _,p in ipairs(beams) do local e=entranceOf(p); p.Touched:Connect(function(hit) if lethal[p] and humOf(hit) then respawn(hit,e) end end) end
 end
 
-RS.Heartbeat:Connect(function()
+RS.Stepped:Connect(function()
 	if not movers then return end
 	local t=os.clock(); local dcf={}
 	for _,p in ipairs(movers) do if p.Parent then
@@ -1098,14 +1089,7 @@ RS.Heartbeat:Connect(function()
 		elseif ph<0.5+warn/cyc then p.Transparency=(math.floor(t*10)%2==0) and 0.3 or 0.8; lethal[p]=false
 		else p.Transparency=0; lethal[p]=true end
 	end end
-	for _,plr in ipairs(Players:GetPlayers()) do
-		local ch=plr.Character; local hrp=ch and ch:FindFirstChild("HumanoidRootPart")
-		if hrp then
-			rayp.FilterDescendantsInstances={ch}
-			local res=workspace:Raycast(hrp.Position,Vector3.new(0,-8,0),rayp)
-			if res and dcf[res.Instance] then local D=dcf[res.Instance]; hrp.CFrame=hrp.CFrame+((D*CFrame.new(hrp.Position)).Position-hrp.Position) end
-		end
-	end
+	-- (수동 캐리 불필요: Stepped 로 움직여 물리가 밟은 플레이어를 자동으로 실어줌)
 end)
 
 -- ===== 추첨 =====
