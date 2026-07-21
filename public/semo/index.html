@@ -223,6 +223,9 @@
     <b id="outTitle">생성된 Luau</b><span class="muted" id="outSub">— Builder + PlatformController</span>
     <button class="mini" id="copyBuilder" style="margin-left:auto" onclick="copyPart('builder')">📋 Builder 복사</button>
     <button class="mini" id="copyController" onclick="copyPart('controller')">📋 Controller 복사</button>
+    <button class="mini" id="copyPool" style="margin-left:auto" onclick="copyRound('pool')" hidden>📋 ①풀 빌더</button>
+    <button class="mini" id="copyGameServer" onclick="copyRound('gs')" hidden>📋 ②GameServer</button>
+    <button class="mini" id="copyUI" onclick="copyRound('ui')" hidden>📋 ③UI</button>
     <button class="mini" id="copyOut" onclick="copyOut()" hidden>📋 복사</button>
   </div>
   <textarea id="out"></textarea>
@@ -565,7 +568,7 @@ function mirror(){
 function clearAll(){ snapshot(); for(const k in grid)delete grid[k]; selectedCell=null; selection=new Set(); renderCells(); renderParams(); updateStat(); }
 
 // ---- history (undo/redo) + save/load ----
-const VERSION='2.4';
+const VERSION='2.5';
 let history=[], future=[], editing=false;
 function gv(id){ return document.getElementById(id).value; }
 function curGlobals(){ return {secNum:gv('secNum'),len:gv('len'),hgt:gv('hgt'),zig:gv('zig'),name:gv('secName'),diff:gv('secDiff')}; }
@@ -615,15 +618,18 @@ function outMode(kind){
     luau:['생성된 Luau','— Builder + PlatformController'],
     json:['세모 저장 데이터 (JSON)','— 복사해서 보관 · 불러오려면 이 칸에 붙여넣고 “불러오기”'],
     assembly:['조립 스크립트 (OctagonAssembler)','— ServerScriptService 에 Script 로'],
-    round:['라운드 시스템 (풀 빌더 + GameServer)','— ①풀 빌더=커맨드바 1회, ②GameServer=ServerScriptService Script'],
+    round:['라운드 시스템 (①풀 빌더 + ②GameServer + ③UI)','— 각 부분을 아래 버튼으로 나눠 복사해서 안내대로 배치'],
     env:['환경 세팅 스크립트','— 커맨드바(F9)에 붙여넣고 한 번 실행'],
   }[kind]||['생성된 Luau','— Builder + PlatformController'];
   document.getElementById('outTitle').textContent=T[0];
   document.getElementById('outSub').textContent=T[1];
-  const showBC=(kind==='luau');
+  const showBC=(kind==='luau'), showRound=(kind==='round');
   document.getElementById('copyBuilder').hidden=!showBC;
   document.getElementById('copyController').hidden=!showBC;
-  document.getElementById('copyOut').hidden=showBC;
+  document.getElementById('copyPool').hidden=!showRound;
+  document.getElementById('copyGameServer').hidden=!showRound;
+  document.getElementById('copyUI').hidden=!showRound;
+  document.getElementById('copyOut').hidden=(showBC||showRound);
 }
 function saveJSON(){
   document.getElementById('out').value=serialize();
@@ -637,6 +643,8 @@ function loadJSON(){
   snapshot(); applyState(data);
 }
 function copyOut(){ navigator.clipboard.writeText(document.getElementById('out').value); }
+let lastPool='', lastGameServer='', lastUI='';
+function copyRound(which){ navigator.clipboard.writeText(which==='pool'?lastPool:which==='gs'?lastGameServer:lastUI); }
 
 // ---- code gen ----
 function hexRGB(h){h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
@@ -773,6 +781,7 @@ function roundSystemCode(){
   b+=`print("풀 생성 완료 — 세모 ${library.length}개 (ServerStorage.SectionPool)")\n`;
   const HEIGHT=Math.round(parseFloat(gv('hgt'))||100);
   const gs=GAMESERVER.split('__RING__').join(String(RING)).split('__HEIGHT__').join(String(HEIGHT));
+  lastPool=b; lastGameServer=gs; lastUI=UI_SCRIPT;   // 나눠 복사용
   document.getElementById('out').value=b+'\n\n'+gs+'\n\n'+UI_SCRIPT;
   outMode('round'); document.getElementById('octagon').classList.add('hidden');
   document.getElementById('bottom').classList.remove('hidden');
