@@ -201,6 +201,7 @@
   <button data-role="admin" onclick="batchExport()">📦 전체 내보내기</button>
   <button data-role="admin" onclick="assemblyCode()">🔩 조립 스크립트</button>
   <button data-role="admin" onclick="roundSystemCode()">🎲 라운드 시스템</button>
+  <button data-role="admin" onclick="envCode()">🌈 환경 세팅</button>
   <button onclick="view3d()">🧊 3D 미리보기</button>
   <button onclick="sideView()">📐 측면 높이</button>
   <button data-role="admin" onclick="octagonPreview()">⬡ 팔각형 미리보기</button>
@@ -564,7 +565,7 @@ function mirror(){
 function clearAll(){ snapshot(); for(const k in grid)delete grid[k]; selectedCell=null; selection=new Set(); renderCells(); renderParams(); updateStat(); }
 
 // ---- history (undo/redo) + save/load ----
-const VERSION='2.3';
+const VERSION='2.4';
 let history=[], future=[], editing=false;
 function gv(id){ return document.getElementById(id).value; }
 function curGlobals(){ return {secNum:gv('secNum'),len:gv('len'),hgt:gv('hgt'),zig:gv('zig'),name:gv('secName'),diff:gv('secDiff')}; }
@@ -615,6 +616,7 @@ function outMode(kind){
     json:['세모 저장 데이터 (JSON)','— 복사해서 보관 · 불러오려면 이 칸에 붙여넣고 “불러오기”'],
     assembly:['조립 스크립트 (OctagonAssembler)','— ServerScriptService 에 Script 로'],
     round:['라운드 시스템 (풀 빌더 + GameServer)','— ①풀 빌더=커맨드바 1회, ②GameServer=ServerScriptService Script'],
+    env:['환경 세팅 스크립트','— 커맨드바(F9)에 붙여넣고 한 번 실행'],
   }[kind]||['생성된 Luau','— Builder + PlatformController'];
   document.getElementById('outTitle').textContent=T[0];
   document.getElementById('outSub').textContent=T[1];
@@ -647,28 +649,29 @@ function emitCell(grd,length,height,zig,key,hp){
   const size=pf.sizeAuto?autoSize(r):pf.sizeManual;
   const x=+(slotOf(c,n)*zig).toFixed(2), y=+(height*hpVal(hp,r)).toFixed(2), z=+(-(length/N)*r).toFixed(2);
   const[rr,gg,bb]=hexRGB(KINDS[pf.kind].color); const P=pf.params, K=pf.kind, g=KINDS[K].group;
-  const gray='150,157,168';
+  const gray='204,210,222';  // 밝은 회색 base tile
+  const SP='Enum.Material.SmoothPlastic', NE='Enum.Material.Neon';
   const attrs=`\tp:SetAttribute("Kind","${K}")\n\tp:SetAttribute("Size",${size})\n`+
     Object.entries(P).map(([k,v])=>`\tp:SetAttribute("${k}",${typeof v==='string'?`"${v}"`:v})\n`).join('');
   let s=`do -- ${key} ${K}\n`;
   if(K==='lava'){
-    s+=`\tlocal p=mkP("P_${r}_${c}",${size},0.4,${size},${x},${y},${z},${rr},${gg},${bb},Enum.Material.Neon)\n`+attrs;
+    s+=`\tlocal p=mkP("P_${r}_${c}",${size},0.4,${size},${x},${y},${z},${rr},${gg},${bb},${NE})\n`+attrs;
   }else if(g==='redhaz'){
     const L=P.Length||6;
-    s+=`\tmkP("P_${r}_${c}",${size},1,${size},${x},${y},${z},${gray})\n`;   // 밟는 발판(회색)
-    if(K==='spinner')   s+=`\tlocal p=mkP("P_${r}_${c}_Dev",${L},1.2,1.2,${x},${(y+2).toFixed(2)},${z},${rr},${gg},${bb},Enum.Material.Metal)\n`+attrs;
-    else if(K==='pendulum') s+=`\tlocal p=mkP("P_${r}_${c}_Dev",1.6,1.6,1.6,${x},${(y+L).toFixed(2)},${z},${rr},${gg},${bb},Enum.Material.Metal)\n`+attrs;
-    else if(K==='pushwall') s+=`\tlocal p=mkP("P_${r}_${c}_Dev",1.2,5,${L},${x},${(y+2.5).toFixed(2)},${z},${rr},${gg},${bb})\n`+attrs;
-    else                s+=`\tlocal p=mkP("P_${r}_${c}_Dev",2,2,2,${x},${(y+1.5).toFixed(2)},${z},${rr},${gg},${bb},Enum.Material.Metal)\n`+attrs; // intpush
+    s+=`\tmkP("P_${r}_${c}",${size},1,${size},${x},${y},${z},${gray},${SP})\n`;   // 밟는 발판
+    if(K==='spinner')   s+=`\tlocal p=mkP("P_${r}_${c}_Dev",${L},1.2,1.2,${x},${(y+2).toFixed(2)},${z},${rr},${gg},${bb},${NE})\n`+attrs;
+    else if(K==='pendulum') s+=`\tlocal p=mkP("P_${r}_${c}_Dev",1.6,1.6,1.6,${x},${(y+L).toFixed(2)},${z},${rr},${gg},${bb},${NE})\n`+attrs;
+    else if(K==='pushwall') s+=`\tlocal p=mkP("P_${r}_${c}_Dev",1.2,5,${L},${x},${(y+2.5).toFixed(2)},${z},${rr},${gg},${bb},${NE})\n`+attrs;
+    else                s+=`\tlocal p=mkP("P_${r}_${c}_Dev",2,2,2,${x},${(y+1.5).toFixed(2)},${z},${rr},${gg},${bb},${NE})\n`+attrs; // intpush
   }else if(K==='spike'){
-    s+=`\tmkP("P_${r}_${c}",${size},1,${size},${x},${y},${z},${gray})\n`;
-    s+=`\tlocal p=mkP("P_${r}_${c}_Dev",${(size*0.85).toFixed(2)},2.6,${(size*0.85).toFixed(2)},${x},${(y-1.4).toFixed(2)},${z},${rr},${gg},${bb},Enum.Material.DiamondPlate)\n`+attrs;
+    s+=`\tmkP("P_${r}_${c}",${size},1,${size},${x},${y},${z},${gray},${SP})\n`;
+    s+=`\tlocal p=mkP("P_${r}_${c}_Dev",${(size*0.85).toFixed(2)},2.6,${(size*0.85).toFixed(2)},${x},${(y-1.4).toFixed(2)},${z},${rr},${gg},${bb},${NE})\n`+attrs;
   }else if(K==='laser'){
     const L=P.Range||6;
-    s+=`\tmkP("P_${r}_${c}",${size},1,${size},${x},${y},${z},${gray})\n`;
-    s+=`\tlocal p=mkP("P_${r}_${c}_Dev",${L},0.4,0.4,${x},${(y+3).toFixed(2)},${z},${rr},${gg},${bb},Enum.Material.Neon)\n`+attrs;
+    s+=`\tmkP("P_${r}_${c}",${size},1,${size},${x},${y},${z},${gray},${SP})\n`;
+    s+=`\tlocal p=mkP("P_${r}_${c}_Dev",${L},0.4,0.4,${x},${(y+3).toFixed(2)},${z},${rr},${gg},${bb},${NE})\n`+attrs;
   }else{ // plain / moving / rotplat / vanish : 밟는 발판이 곧 장치
-    s+=`\tlocal p=mkP("P_${r}_${c}",${size},1,${size},${x},${y},${z},${rr},${gg},${bb})\n`+attrs;
+    s+=`\tlocal p=mkP("P_${r}_${c}",${size},1,${size},${x},${y},${z},${rr},${gg},${bb},${SP})\n`+attrs;
   }
   return s+`end\n`;
 }
@@ -687,9 +690,9 @@ function sectionLua(st,parentExpr){
   const keys=Object.keys(grd).sort((a,x)=>a.split('-')[0]-x.split('-')[0] || a.split('-')[1]-x.split('-')[1]);
   let s=`M=Instance.new("Model")\nM.Name="Section_${sn}"\n`;
   s+=`M:SetAttribute("SectionName","${name}")\nM:SetAttribute("Difficulty","${diff}")\n`;
-  s+=`local entrance=mkP("Entrance",8,1,8,0,0,0,120,200,120)\nentrance:SetAttribute("Role","Entrance")\nM.PrimaryPart=entrance\n`;
+  s+=`local entrance=mkP("Entrance",8,1,8,0,0,0,90,240,140,Enum.Material.Neon)\nentrance:SetAttribute("Role","Entrance")\nM.PrimaryPart=entrance\n`;
   for(const key of keys) s+=emitCell(grd,length,height,zig,key,hp);
-  s+=`local exit=mkP("Exit",6,1,6,0,${(+height).toFixed(2)},${(+(-length)).toFixed(2)},250,220,90)\nexit:SetAttribute("Role","Exit")\n`;
+  s+=`local exit=mkP("Exit",6,1,6,0,${(+height).toFixed(2)},${(+(-length)).toFixed(2)},255,215,70,Enum.Material.Neon)\nexit:SetAttribute("Role","Exit")\n`;
   s+=`M.Parent=${parentExpr}\n`;
   return {lua:s, count:keys.length, sn, name, diff};
 }
@@ -772,6 +775,27 @@ function roundSystemCode(){
   const gs=GAMESERVER.split('__RING__').join(String(RING)).split('__HEIGHT__').join(String(HEIGHT));
   document.getElementById('out').value=b+'\n\n'+gs+'\n\n'+UI_SCRIPT;
   outMode('round'); document.getElementById('octagon').classList.add('hidden');
+  document.getElementById('bottom').classList.remove('hidden');
+}
+// 환경 세팅: 화사·귀여운 파스텔 분위기 (조명/대기/블룸/배경 지면)
+function envCode(){
+  const RING=Math.round(parseFloat(gv('len'))||120);
+  let s=`--[[ ===== 환경 세팅 (커맨드바 F9 에 붙여넣고 한 번 실행) =====\n  화사·귀여운 파스텔 분위기: 밝은 조명 + 부드러운 대기 + Neon 발판 은은한 발광 + 배경 지면. ]]\n`;
+  s+=`local L=game:GetService("Lighting")\n`;
+  s+=`L.Brightness=2.2 L.ClockTime=14 L.GlobalShadows=true\n`;
+  s+=`L.Ambient=Color3.fromRGB(150,160,180) L.OutdoorAmbient=Color3.fromRGB(175,185,205)\n`;
+  s+=`L.EnvironmentDiffuseScale=1 L.EnvironmentSpecularScale=1\n`;
+  s+=`for _,c in ipairs(L:GetChildren()) do\n\tif c:IsA("Atmosphere") or c:IsA("BloomEffect") or c:IsA("ColorCorrectionEffect") or c:IsA("Sky") or c:IsA("SunRaysEffect") then c:Destroy() end\nend\n`;
+  s+=`local atm=Instance.new("Atmosphere") atm.Density=0.3 atm.Offset=0.2\natm.Color=Color3.fromRGB(216,226,246) atm.Decay=Color3.fromRGB(165,180,215) atm.Glare=0.15 atm.Haze=1.4 atm.Parent=L\n`;
+  s+=`local bloom=Instance.new("BloomEffect") bloom.Intensity=0.6 bloom.Size=24 bloom.Threshold=1.05 bloom.Parent=L\n`;
+  s+=`local cc=Instance.new("ColorCorrectionEffect") cc.Saturation=0.16 cc.Brightness=0.02 cc.Contrast=0.03 cc.TintColor=Color3.fromRGB(255,250,246) cc.Parent=L\n`;
+  s+=`local sky=Instance.new("Sky") sky.Parent=L\n`;
+  s+=`local sun=Instance.new("SunRaysEffect") sun.Intensity=0.12 sun.Spread=0.8 sun.Parent=L\n`;
+  s+=`-- 배경 지면(킬존 아래, 충돌 없음) — 떨어질 때 파스텔 잔디가 보임\n`;
+  s+=`local ground=workspace:FindFirstChild("BackdropGround") or Instance.new("Part")\nground.Name="BackdropGround" ground.Anchored=true ground.CanCollide=false\nground.Size=Vector3.new(${RING*4},2,${RING*4}) ground.Position=Vector3.new(0,-32,0)\nground.Color=Color3.fromRGB(190,214,196) ground.Material=Enum.Material.Grass ground.Parent=workspace\n`;
+  s+=`print("환경 세팅 완료 — 화사한 분위기 적용")\n`;
+  document.getElementById('out').value=s;
+  outMode('env'); document.getElementById('octagon').classList.add('hidden');
   document.getElementById('bottom').classList.remove('hidden');
 }
 function octagonPreview(){
@@ -1154,7 +1178,7 @@ local finished={}   -- 이번 라운드 완주자 [player]=true
 -- 출구들은 중앙 y=HEIGHT 에서 만남. 전망대=그 높이의 실제 착지 발판, 완주존=그 위 얇게.
 local deck=Instance.new("Part")
 deck.Name="전망대"; deck.Anchored=true; deck.Size=Vector3.new(30,2,30)
-deck.Position=Vector3.new(0,HEIGHT,0); deck.Color=Color3.fromRGB(250,220,90); deck.Parent=workspace
+deck.Position=Vector3.new(0,HEIGHT,0); deck.Color=Color3.fromRGB(255,214,92); deck.Material=Enum.Material.Neon; deck.Parent=workspace
 local finishZone=Instance.new("Part")
 finishZone.Name="FinishZone"; finishZone.Anchored=true; finishZone.CanCollide=false; finishZone.Transparency=1
 finishZone.Size=Vector3.new(30,8,30); finishZone.Position=Vector3.new(0,HEIGHT+4,0); finishZone.Parent=workspace
@@ -1165,6 +1189,7 @@ finishZone.Touched:Connect(function(hit)
 		local hrp=hit.Parent:FindFirstChild("HumanoidRootPart")
 		if hrp then hrp.CFrame=deck.CFrame+Vector3.new(math.random(-8,8),4,math.random(-8,8)) end
 		remote:FireAllClients("finisher", plr.Name)
+		remote:FireClient(plr, "youfinished")
 	end
 end)
 
@@ -1198,7 +1223,7 @@ task.spawn(function()
 		if #chosen==0 then warn("SectionPool 이 비어 있음 — 풀 빌더를 먼저 실행하세요"); task.wait(5)
 		else
 			assemble(chosen); rebuild(); setupSpawns()
-			table.clear(finished); remote:FireAllClients("reset")
+			table.clear(finished); remote:FireAllClients("reset"); remote:FireAllClients("roundstart")
 			for _,plr in ipairs(Players:GetPlayers()) do plr:LoadCharacter() end
 			print(("라운드 시작 — 세모 %d개"):format(#chosen))
 			for tleft=ROUND_TIME,1,-1 do remote:FireAllClients("time", tleft); task.wait(1) end
@@ -1207,53 +1232,80 @@ task.spawn(function()
 	end
 end)
 `;
-const UI_SCRIPT=`--[[ ===== 3) UI: 카운트다운 + 완주자 명단 =====
-  StarterGui 에 LocalScript 로 넣으세요. ]]
+const UI_SCRIPT=`--[[ ===== 3) UI: 카운트다운 + 완주자 명단 + 연출 =====
+  StarterGui 에 LocalScript 로 넣으세요. (화사·귀여운 파스텔) ]]
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
 local remote=ReplicatedStorage:WaitForChild("SemoRemote")
 local player=game:GetService("Players").LocalPlayer
+local FONT=Enum.Font.FredokaOne
 
 local gui=Instance.new("ScreenGui")
-gui.Name="SemoHUD"; gui.ResetOnSpawn=false; gui.Parent=player:WaitForChild("PlayerGui")
+gui.Name="SemoHUD" gui.ResetOnSpawn=false gui.IgnoreGuiInset=true gui.Parent=player:WaitForChild("PlayerGui")
 
--- 카운트다운(상단 중앙)
+local function corner(o,r) local c=Instance.new("UICorner") c.CornerRadius=UDim.new(0,r or 14) c.Parent=o return c end
+local function stroke(o,col,th) local s=Instance.new("UIStroke") s.Color=col s.Thickness=th or 2 s.Parent=o return s end
+
+-- 카운트다운 (상단 중앙 pill)
 local timer=Instance.new("TextLabel")
-timer.Size=UDim2.new(0,220,0,44); timer.Position=UDim2.new(0.5,-110,0,12)
-timer.BackgroundColor3=Color3.fromRGB(14,17,22); timer.BackgroundTransparency=0.2
-timer.TextColor3=Color3.fromRGB(230,237,243); timer.Font=Enum.Font.GothamBold; timer.TextScaled=true
-timer.Text="5:00"; timer.Parent=gui
-local tc=Instance.new("UICorner"); tc.CornerRadius=UDim.new(0,10); tc.Parent=timer
+timer.Size=UDim2.new(0,190,0,52) timer.Position=UDim2.new(0.5,-95,0,14)
+timer.BackgroundColor3=Color3.fromRGB(255,255,255) timer.BackgroundTransparency=0.05
+timer.TextColor3=Color3.fromRGB(60,80,120) timer.Font=FONT timer.TextScaled=true
+timer.Text="⏱ 5:00" timer.Parent=gui
+corner(timer,18) stroke(timer,Color3.fromRGB(120,150,220),2)
 
--- 완주자 명단(우측)
+-- 완주자 명단 (우측 카드)
 local panel=Instance.new("Frame")
-panel.Size=UDim2.new(0,200,0,280); panel.Position=UDim2.new(1,-212,0,70)
-panel.BackgroundColor3=Color3.fromRGB(14,17,22); panel.BackgroundTransparency=0.2; panel.Parent=gui
-local pc=Instance.new("UICorner"); pc.CornerRadius=UDim.new(0,10); pc.Parent=panel
+panel.Size=UDim2.new(0,210,0,300) panel.Position=UDim2.new(1,-224,0,80)
+panel.BackgroundColor3=Color3.fromRGB(255,255,255) panel.BackgroundTransparency=0.08 panel.Parent=gui
+corner(panel,16) stroke(panel,Color3.fromRGB(120,150,220),2)
 local title=Instance.new("TextLabel")
-title.Size=UDim2.new(1,0,0,30); title.BackgroundTransparency=1; title.TextColor3=Color3.fromRGB(74,222,128)
-title.Font=Enum.Font.GothamBold; title.TextSize=16; title.Text="🏁 완주자"; title.Parent=panel
+title.Size=UDim2.new(1,0,0,36) title.BackgroundTransparency=1 title.TextColor3=Color3.fromRGB(70,90,140)
+title.Font=FONT title.TextSize=20 title.Text="🏁 완주자" title.Parent=panel
 local list=Instance.new("ScrollingFrame")
-list.Size=UDim2.new(1,-8,1,-36); list.Position=UDim2.new(0,4,0,32); list.BackgroundTransparency=1
-list.ScrollBarThickness=4; list.CanvasSize=UDim2.new(0,0,0,0); list.AutomaticCanvasSize=Enum.AutomaticSize.Y; list.Parent=panel
-local layout=Instance.new("UIListLayout"); layout.Padding=UDim.new(0,3); layout.Parent=list
+list.Size=UDim2.new(1,-10,1,-42) list.Position=UDim2.new(0,5,0,38) list.BackgroundTransparency=1
+list.ScrollBarThickness=4 list.CanvasSize=UDim2.new(0,0,0,0) list.AutomaticCanvasSize=Enum.AutomaticSize.Y list.Parent=panel
+local layout=Instance.new("UIListLayout") layout.Padding=UDim.new(0,4) layout.Parent=list
 
+-- 중앙 배너 (라운드 시작 / 완주 연출)
+local banner=Instance.new("TextLabel")
+banner.Size=UDim2.new(0,460,0,96) banner.Position=UDim2.new(0.5,-230,0.3,0)
+banner.BackgroundTransparency=1 banner.Font=FONT banner.TextScaled=true banner.Text="" banner.Visible=false banner.Parent=gui
+stroke(banner,Color3.fromRGB(50,60,110),3)
+local function flash(txt,col)
+	banner.Text=txt banner.TextColor3=col banner.TextTransparency=0 banner.Visible=true
+	task.spawn(function()
+		task.wait(1.3)
+		for i=1,10 do banner.TextTransparency=i/10 task.wait(0.045) end
+		banner.Visible=false
+	end)
+end
+
+local MEDAL={"🥇","🥈","🥉"}
 local count=0
 local function fmt(n) return string.format("%d:%02d", math.floor(n/60), n%60) end
 remote.OnClientEvent:Connect(function(kind, val)
 	if kind=="time" then
-		timer.Text=fmt(val)
-		timer.TextColor3=(val<=30) and Color3.fromRGB(239,68,68) or Color3.fromRGB(230,237,243)
+		timer.Text="⏱ "..fmt(val)
+		timer.TextColor3=(val<=30) and Color3.fromRGB(235,70,80) or Color3.fromRGB(60,80,120)
 	elseif kind=="reset" then
 		count=0
-		for _,c in ipairs(list:GetChildren()) do if c:IsA("TextLabel") then c:Destroy() end end
+		for _,c in ipairs(list:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
+	elseif kind=="roundstart" then
+		flash("라운드 시작!", Color3.fromRGB(120,200,255))
 	elseif kind=="roundend" then
 		timer.Text="라운드 종료!"
+		flash("라운드 종료!", Color3.fromRGB(255,210,90))
+	elseif kind=="youfinished" then
+		flash("🎉 완주! 🎉", Color3.fromRGB(120,235,150))
 	elseif kind=="finisher" then
 		count+=1
+		local row=Instance.new("Frame")
+		row.Size=UDim2.new(1,0,0,28) row.BackgroundColor3=Color3.fromRGB(238,243,252) row.BackgroundTransparency=0.12 row.LayoutOrder=count row.Parent=list
+		corner(row,8)
 		local lbl=Instance.new("TextLabel")
-		lbl.Size=UDim2.new(1,0,0,24); lbl.BackgroundTransparency=1; lbl.TextColor3=Color3.fromRGB(230,237,243)
-		lbl.Font=Enum.Font.Gotham; lbl.TextSize=14; lbl.TextXAlignment=Enum.TextXAlignment.Left
-		lbl.Text=count..". "..val; lbl.LayoutOrder=count; lbl.Parent=list
+		lbl.Size=UDim2.new(1,-10,1,0) lbl.Position=UDim2.new(0,8,0,0) lbl.BackgroundTransparency=1
+		lbl.TextColor3=Color3.fromRGB(55,70,110) lbl.Font=FONT lbl.TextSize=15 lbl.TextXAlignment=Enum.TextXAlignment.Left
+		lbl.Text=(MEDAL[count] or (count..".")).." "..val lbl.Parent=row
 	end
 end)
 `;
