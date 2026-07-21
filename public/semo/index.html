@@ -568,7 +568,7 @@ function mirror(){
 function clearAll(){ snapshot(); for(const k in grid)delete grid[k]; selectedCell=null; selection=new Set(); renderCells(); renderParams(); updateStat(); }
 
 // ---- history (undo/redo) + save/load ----
-const VERSION='2.5';
+const VERSION='2.6';
 let history=[], future=[], editing=false;
 function gv(id){ return document.getElementById(id).value; }
 function curGlobals(){ return {secNum:gv('secNum'),len:gv('len'),hgt:gv('hgt'),zig:gv('zig'),name:gv('secName'),diff:gv('secDiff')}; }
@@ -651,13 +651,14 @@ function hexRGB(h){h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt
 let lastBuilder='', lastController='';
 
 // 셀 하나 → 종류별 지오메트리 Luau. 위험장치=밟는 base tile + 장애물(_Dev). 용암=단일 넓은 웅덩이. 레이저=base+빔.
-function emitCell(grd,length,height,zig,key,hp){
+const DIFF_TILE={'쉬움':'200,225,205','보통':'204,210,222','지옥':'228,205,210'};  // 난이도별 밟는 발판 파스텔 틴트
+function emitCell(grd,length,height,zig,key,hp,diff){
   const N=21;
   const[r,c]=key.split('-').map(Number); const pf=grd[key]; const n=colsForRow(r);
   const size=pf.sizeAuto?autoSize(r):pf.sizeManual;
   const x=+(slotOf(c,n)*zig).toFixed(2), y=+(height*hpVal(hp,r)).toFixed(2), z=+(-(length/N)*r).toFixed(2);
   const[rr,gg,bb]=hexRGB(KINDS[pf.kind].color); const P=pf.params, K=pf.kind, g=KINDS[K].group;
-  const gray='204,210,222';  // 밝은 회색 base tile
+  const gray=DIFF_TILE[diff]||DIFF_TILE['보통'];  // 밟는 발판 base tile (난이도 틴트)
   const SP='Enum.Material.SmoothPlastic', NE='Enum.Material.Neon';
   const attrs=`\tp:SetAttribute("Kind","${K}")\n\tp:SetAttribute("Size",${size})\n`+
     Object.entries(P).map(([k,v])=>`\tp:SetAttribute("${k}",${typeof v==='string'?`"${v}"`:v})\n`).join('');
@@ -678,7 +679,9 @@ function emitCell(grd,length,height,zig,key,hp){
     const L=P.Range||6;
     s+=`\tmkP("P_${r}_${c}",${size},1,${size},${x},${y},${z},${gray},${SP})\n`;
     s+=`\tlocal p=mkP("P_${r}_${c}_Dev",${L},0.4,0.4,${x},${(y+3).toFixed(2)},${z},${rr},${gg},${bb},${NE})\n`+attrs;
-  }else{ // plain / moving / rotplat / vanish : 밟는 발판이 곧 장치
+  }else if(K==='plain'){ // 평범 발판: 난이도 틴트
+    s+=`\tlocal p=mkP("P_${r}_${c}",${size},1,${size},${x},${y},${z},${gray},${SP})\n`+attrs;
+  }else{ // moving / rotplat / vanish : 밟는 발판이 곧 장치 → 신호색(kind) 유지
     s+=`\tlocal p=mkP("P_${r}_${c}",${size},1,${size},${x},${y},${z},${rr},${gg},${bb},${SP})\n`+attrs;
   }
   return s+`end\n`;
@@ -698,9 +701,9 @@ function sectionLua(st,parentExpr){
   const keys=Object.keys(grd).sort((a,x)=>a.split('-')[0]-x.split('-')[0] || a.split('-')[1]-x.split('-')[1]);
   let s=`M=Instance.new("Model")\nM.Name="Section_${sn}"\n`;
   s+=`M:SetAttribute("SectionName","${name}")\nM:SetAttribute("Difficulty","${diff}")\n`;
-  s+=`local entrance=mkP("Entrance",8,1,8,0,0,0,90,240,140,Enum.Material.Neon)\nentrance:SetAttribute("Role","Entrance")\nM.PrimaryPart=entrance\n`;
-  for(const key of keys) s+=emitCell(grd,length,height,zig,key,hp);
-  s+=`local exit=mkP("Exit",6,1,6,0,${(+height).toFixed(2)},${(+(-length)).toFixed(2)},255,215,70,Enum.Material.Neon)\nexit:SetAttribute("Role","Exit")\n`;
+  s+=`local entrance=mkP("Entrance",8,1,8,0,0,0,90,240,140,Enum.Material.Neon)\nentrance:SetAttribute("Role","Entrance")\nM.PrimaryPart=entrance\nlocal el=Instance.new("PointLight") el.Color=Color3.fromRGB(90,240,140) el.Brightness=3 el.Range=16 el.Parent=entrance\n`;
+  for(const key of keys) s+=emitCell(grd,length,height,zig,key,hp,diff);
+  s+=`local exit=mkP("Exit",6,1,6,0,${(+height).toFixed(2)},${(+(-length)).toFixed(2)},255,215,70,Enum.Material.Neon)\nexit:SetAttribute("Role","Exit")\nlocal xl=Instance.new("PointLight") xl.Color=Color3.fromRGB(255,215,70) xl.Brightness=3 xl.Range=16 xl.Parent=exit\n`;
   s+=`M.Parent=${parentExpr}\n`;
   return {lua:s, count:keys.length, sn, name, diff};
 }
@@ -802,7 +805,31 @@ function envCode(){
   s+=`local sun=Instance.new("SunRaysEffect") sun.Intensity=0.12 sun.Spread=0.8 sun.Parent=L\n`;
   s+=`-- 배경 지면(킬존 아래, 충돌 없음) — 떨어질 때 파스텔 잔디가 보임\n`;
   s+=`local ground=workspace:FindFirstChild("BackdropGround") or Instance.new("Part")\nground.Name="BackdropGround" ground.Anchored=true ground.CanCollide=false\nground.Size=Vector3.new(${RING*4},2,${RING*4}) ground.Position=Vector3.new(0,-32,0)\nground.Color=Color3.fromRGB(190,214,196) ground.Material=Enum.Material.Grass ground.Parent=workspace\n`;
-  s+=`print("환경 세팅 완료 — 화사한 분위기 적용")\n`;
+  // 스폰 광장: 입구 링을 감싸는 팔각 외곽 통로 + 가로등 (중앙은 빈 공간 유지 → 낙하 시 킬존)
+  s+=`local plaza=workspace:FindFirstChild("SpawnPlaza") if plaza then plaza:Destroy() end\n`;
+  s+=`plaza=Instance.new("Model") plaza.Name="SpawnPlaza" plaza.Parent=workspace\n`;
+  s+=`local RING=${RING}\n`;
+  s+=`local function pp(name,sx,sy,sz,cf,r,g,b,mat)\n\tlocal p=Instance.new("Part") p.Name=name p.Anchored=true\n\tp.Size=Vector3.new(sx,sy,sz) p.CFrame=cf p.Color=Color3.fromRGB(r,g,b)\n\tp.Material=mat or Enum.Material.SmoothPlastic p.Parent=plaza return p\nend\n`;
+  s+=`local WALK=RING+12   -- 통로 중심 반지름\n`;
+  s+=`local edgeW=2*WALK*math.tan(math.rad(22.5))+8   -- 변 길이(모서리끼리 이어지게)\n`;
+  s+=`for i=1,8 do\n`;
+  s+=`\tlocal mid=math.rad((i-1)*45+22.5)\n`;
+  s+=`\tlocal pos=Vector3.new(math.cos(mid),0,math.sin(mid))*WALK\n`;
+  s+=`\tlocal cf=CFrame.lookAt(Vector3.new(pos.X,-0.5,pos.Z), Vector3.new(0,-0.5,0))   -- -Z 가 중심 향함\n`;
+  s+=`\tpp("Walk"..i, edgeW,1,40, cf, 226,214,238)                                     -- 파스텔 라벤더 통로\n`;
+  s+=`\tpp("Rail"..i, edgeW,2,1, cf*CFrame.new(0,1.5,20), 150,120,235, Enum.Material.Neon) -- 외곽 난간\n`;
+  s+=`\tlocal ca=math.rad((i-1)*45)\n`;
+  s+=`\tlocal lp=Vector3.new(math.cos(ca),0,math.sin(ca))*(RING+28)\n`;
+  s+=`\tpp("Lamp"..i, 1,14,1, CFrame.new(lp.X,7,lp.Z), 90,80,120)                       -- 가로등 기둥\n`;
+  s+=`\tlocal bulb=pp("Bulb"..i, 3,3,3, CFrame.new(lp.X,14,lp.Z), 255,236,180, Enum.Material.Neon)\n`;
+  s+=`\tlocal lt=Instance.new("PointLight") lt.Color=Color3.fromRGB(255,224,150) lt.Brightness=2.5 lt.Range=24 lt.Parent=bulb\n`;
+  s+=`end\n`;
+  s+=`-- 환영 사인 (항상 플레이어를 향하는 BillboardGui)\n`;
+  s+=`local anchor=pp("SignAnchor",1,1,1,CFrame.new(0,13,RING+20),255,255,255) anchor.Transparency=1\n`;
+  s+=`local bg=Instance.new("BillboardGui") bg.Size=UDim2.new(0,320,0,96) bg.Adornee=anchor bg.Parent=anchor\n`;
+  s+=`local tl=Instance.new("TextLabel") tl.Size=UDim2.new(1,0,1,0) tl.BackgroundTransparency=1\ntl.Text="🔺 세모 광장" tl.TextColor3=Color3.fromRGB(255,255,255) tl.Font=Enum.Font.FredokaOne tl.TextScaled=true tl.Parent=bg\n`;
+  s+=`local ts=Instance.new("UIStroke") ts.Color=Color3.fromRGB(120,100,200) ts.Thickness=3 ts.Parent=tl\n`;
+  s+=`print("환경 세팅 완료 — 화사한 분위기 + 스폰 광장 적용")\n`;
   document.getElementById('out').value=s;
   outMode('env'); document.getElementById('octagon').classList.add('hidden');
   document.getElementById('bottom').classList.remove('hidden');
@@ -1225,6 +1252,18 @@ RS.Heartbeat:Connect(function()
 	end
 end)
 
+-- 라운드 시작 전 잠깐 플레이어 정지(카운트다운 동안) → go 에서 해제
+local function freeze(on)
+	for _,plr in ipairs(Players:GetPlayers()) do
+		local hum=plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
+		if hum then
+			hum.WalkSpeed=on and 0 or 16
+			hum.JumpPower=on and 0 or 50; hum.JumpHeight=on and 0 or 7.2
+		end
+	end
+end
+local function countFinished() local n=0; for _ in pairs(finished) do n+=1 end; return n end
+
 -- ===== 라운드 루프 =====
 task.spawn(function()
 	while true do
@@ -1235,8 +1274,12 @@ task.spawn(function()
 			table.clear(finished); remote:FireAllClients("reset"); remote:FireAllClients("roundstart")
 			for _,plr in ipairs(Players:GetPlayers()) do plr:LoadCharacter() end
 			print(("라운드 시작 — 세모 %d개"):format(#chosen))
+			task.wait(0.4)   -- 캐릭터 로드 여유
+			freeze(true)
+			for n=3,1,-1 do remote:FireAllClients("countdown", n); task.wait(1) end
+			freeze(false); remote:FireAllClients("go")
 			for tleft=ROUND_TIME,1,-1 do remote:FireAllClients("time", tleft); task.wait(1) end
-			remote:FireAllClients("roundend"); task.wait(4)
+			remote:FireAllClients("roundend", countFinished()); task.wait(4)
 		end
 	end
 end)
@@ -1275,10 +1318,21 @@ list.Size=UDim2.new(1,-10,1,-42) list.Position=UDim2.new(0,5,0,38) list.Backgrou
 list.ScrollBarThickness=4 list.CanvasSize=UDim2.new(0,0,0,0) list.AutomaticCanvasSize=Enum.AutomaticSize.Y list.Parent=panel
 local layout=Instance.new("UIListLayout") layout.Padding=UDim.new(0,4) layout.Parent=list
 
+-- 라운드 전환 암전 오버레이 (전체 화면)
+local overlay=Instance.new("Frame")
+overlay.Size=UDim2.new(1,0,1,0) overlay.BackgroundColor3=Color3.fromRGB(28,34,58)
+overlay.BackgroundTransparency=1 overlay.ZIndex=5 overlay.Visible=false overlay.Parent=gui
+local function fade(to,dur)
+	overlay.Visible=true
+	local from=overlay.BackgroundTransparency; local steps=math.max(1,math.floor(dur/0.03))
+	for i=1,steps do overlay.BackgroundTransparency=from+(to-from)*i/steps task.wait(0.03) end
+	if to>=1 then overlay.Visible=false end
+end
+
 -- 중앙 배너 (라운드 시작 / 완주 연출)
 local banner=Instance.new("TextLabel")
 banner.Size=UDim2.new(0,460,0,96) banner.Position=UDim2.new(0.5,-230,0.3,0)
-banner.BackgroundTransparency=1 banner.Font=FONT banner.TextScaled=true banner.Text="" banner.Visible=false banner.Parent=gui
+banner.BackgroundTransparency=1 banner.Font=FONT banner.TextScaled=true banner.Text="" banner.Visible=false banner.ZIndex=6 banner.Parent=gui
 stroke(banner,Color3.fromRGB(50,60,110),3)
 local function flash(txt,col)
 	banner.Text=txt banner.TextColor3=col banner.TextTransparency=0 banner.Visible=true
@@ -1286,6 +1340,20 @@ local function flash(txt,col)
 		task.wait(1.3)
 		for i=1,10 do banner.TextTransparency=i/10 task.wait(0.045) end
 		banner.Visible=false
+	end)
+end
+
+-- 카운트다운 큰 숫자 (중앙, 펄스)
+local cd=Instance.new("TextLabel")
+cd.Size=UDim2.new(0,200,0,200) cd.Position=UDim2.new(0.5,-100,0.5,-100)
+cd.BackgroundTransparency=1 cd.Font=FONT cd.TextColor3=Color3.fromRGB(255,255,255)
+cd.TextScaled=true cd.Text="" cd.Visible=false cd.ZIndex=7 cd.Parent=gui
+stroke(cd,Color3.fromRGB(120,150,220),4)
+local function pulse(txt)
+	cd.Text=txt cd.Visible=true
+	task.spawn(function()
+		for i=0,10 do cd.TextTransparency=i/12 cd.Size=UDim2.new(0,200+i*10,0,200+i*10) cd.Position=UDim2.new(0.5,-100-i*5,0.5,-100-i*5) task.wait(0.06) end
+		cd.Visible=false cd.Size=UDim2.new(0,200,0,200) cd.Position=UDim2.new(0.5,-100,0.5,-100)
 	end)
 end
 
@@ -1300,10 +1368,18 @@ remote.OnClientEvent:Connect(function(kind, val)
 		count=0
 		for _,c in ipairs(list:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
 	elseif kind=="roundstart" then
-		flash("라운드 시작!", Color3.fromRGB(120,200,255))
+		-- 새 라운드 조립 완료 → 암전에서 밝아지며 카운트다운 준비
+		task.spawn(function() fade(0.35,0.4) end)
+	elseif kind=="countdown" then
+		pulse(tostring(val))
+	elseif kind=="go" then
+		task.spawn(function() fade(1,0.5) end)
+		flash("시작!", Color3.fromRGB(120,235,150))
 	elseif kind=="roundend" then
 		timer.Text="라운드 종료!"
-		flash("라운드 종료!", Color3.fromRGB(255,210,90))
+		local msg=(val and val>0) and ("라운드 종료 — "..val.."명 완주!") or "라운드 종료!"
+		flash(msg, Color3.fromRGB(255,210,90))
+		task.spawn(function() fade(0.55,1.2) end)
 	elseif kind=="youfinished" then
 		flash("🎉 완주! 🎉", Color3.fromRGB(120,235,150))
 	elseif kind=="finisher" then
